@@ -1,0 +1,8 @@
+Project URL
+https://ibetggkkqlbzxbnvfoep.supabase.co
+
+Publishable Key
+sb_publishable_vz81CPkk-DGScZkoYG3NTQ_FlyNUT9Q
+
+Anon Key
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliZXRnZ2trcWxienhibnZmb2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDI5MDYsImV4cCI6MjA4ODU3ODkwNn0.8ZU2vRfepT92mskrDCGAQXoIrNUuwB4M_8MjpjtTxqA

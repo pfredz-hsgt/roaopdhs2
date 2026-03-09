@@ -1,0 +1,55 @@
+to-do list:
+	
+[LoginPage]
+
+[HomePage]
+Create Indent Menu:
+inden - routine & urgent
+	[routine] - force user to go through all items in single Rak
+	[urgent] - can indent any loose item
+
+[Indent Modal]
+add batch number to short exp items
+add up to 2 unique exp dates
+emphasize more on PKU
+allow 0 number on indent quantity
+Add remarks for individual items (remarks to be sent for current inden only,  viewable by the issuer)
+
+Each processed indent modal will be sent to [RoutineSummary] - user can do last minute adjustment to indent qty here - after finalizing everything user click on [SEND] button (trigger OrderSend).
+Items will be saved in (RoutineItem) table which is viewable from [IndenCart] and [IndenRecord]
+
+[RoutineSummary]
+Add grouping by Rak
+Can only view current user punya inden (belum send punya)
+User can continue inden from here (if previous attempt incomplete)
+Once confirmed,  need to click [SEND] indent to substore
+Show all 0 items as well - allow user to edit qty
+Have a floating big [SEND] button
+
+Once click send indent,  it will goes to: [IndenCart] and  [IndenRecord]
+
+[IndenCart] will show similar existing Cart page (item qty > 0) but with grouping by Timestamp (OrderSend) and User Name 
+
+[IndenRecord]
+Will show summaries of all items,  including 0 indent items,  name,  and timestamp
+
+[IndenCart]
+Will show list of all items indented (excluding qty: 0 items)
+Can view & print as pdf (as current format)
+For Issuer only
+
+[KewPS6]
+New interactive table formatted like KPS6 but simplified
+All items flagged short exp will appear here
+Proper colouring (glow) for nearly exp
+Editable Balance (initial balance retrieved once on first flag)  qty on each table grid (automatic based on date)
+Editable Remarks Input
+
+[AdminMenu]
+- Manage user profile either (Indenter) or (Issuer)
+- Create new user & reset user password
+- CRUD inventory
+
+
+
+
