@@ -1,55 +1,79 @@
 to-do list:
 	
 [LoginPage]
+each user will be pre-assigned as either (Indenter) or (Issuer)
+Issuer will act as Admin (able to access and view all pages).
+Indenter able to view all pages except [AdminMenu] [IndenRecord] [IndenCart]
+Issuer able to view all pages
 
 [HomePage]
-Create Indent Menu:
-inden - routine & urgent
-	[routine] - force user to go through all items in single Rak
-	[urgent] - can indent any loose item
+Welcome message with user name
+Create IndentSubstore Menu:
+IndentSubstore - routine or urgent (dropdown selector)
+	[routine] - force user to go through all items in single Rak (one by one) - redirect to [RoutineIndentPage]
+	[urgent] - can indent any item from the whole list - redirect to [IndentPage]
+Mobile first design
 
-[Indent Modal]
-add batch number to short exp items
-add up to 2 unique exp dates
-emphasize more on PKU
-allow 0 number on indent quantity
-Add remarks for individual items (remarks to be sent for current inden only,  viewable by the issuer)
 
-Each processed indent modal will be sent to [RoutineSummary] - user can do last minute adjustment to indent qty here - after finalizing everything user click on [SEND] button (trigger OrderSend).
+[RoutineIndentPage]
+will show user name, and selection for Rak (dropdown)
+all items in this page are pre-filtered to show only indent_source = 'OPD Substor'
+Meaning routine indent are only applicable for OPD Substor items.
+then button Start Routine Inden for Rak $selectedabove. 
+Will open [RoutineIndentModal]
+
+
+[RoutineIndentModal]
+add batch number & qty to short exp items
+allow up to 2 unique exp dates
+emphasize more on PKU (relocate the PKU label to center with more spotlight)
+allow 0 number on indent quantity (remove restriction for 0 value)
+Add input IndenRemarks for individual items (IndenRemarks will be sent for current inden only,  viewable by the issuer)
+Replace button [Cancel] and [Add to Cart] with [Previous] and [Next] - clicking previous or next automatically save current values into [RoutineSummary]
+
+Each processed item will be sent to [RoutineSummary] - user can do last minute adjustment to indent qty here - after finalizing everything user click on [SEND] button (trigger OrderSend).
 Items will be saved in (RoutineItem) table which is viewable from [IndenCart] and [IndenRecord]
 
 [RoutineSummary]
-Add grouping by Rak
-Can only view current user punya inden (belum send punya)
+Can only view current user indent, current indent session (not approved yet)
 User can continue inden from here (if previous attempt incomplete)
-Once confirmed,  need to click [SEND] indent to substore
-Show all 0 items as well - allow user to edit qty
+Show all items including 0 quantity as well - allow user to edit qty last minute here
 Have a floating big [SEND] button
-
+Once confirmed,  need to click [SEND] (approve) button to issuer
 Once click send indent,  it will goes to: [IndenCart] and  [IndenRecord]
 
-[IndenCart] will show similar existing Cart page (item qty > 0) but with grouping by Timestamp (OrderSend) and User Name 
-
 [IndenRecord]
-Will show summaries of all items,  including 0 indent items,  name,  and timestamp
+Will show summaries of all items,  including 0 quantity items,  indenter name,  and timestamp. Viewable by issuer only. 
+These are for record purpose only.
+No need for export function.
+It will have datepicker and dropdown to select indent session, and dropdown to select by user.
 
 [IndenCart]
-Will show list of all items indented (excluding qty: 0 items)
+will show similar existing [CartPage] (item qty > 0) but with grouping by Timestamp (indent session) and Indent User 
 Can view & print as pdf (as current format)
-For Issuer only
+The clear button will clear the cart
+Viewable by issuer only.
 
-[KewPS6]
-New interactive table formatted like KPS6 but simplified
+[KewPS6] will replace the [ShortExpPage]
+New interactive table formatted like KewPS6 (official document) but simplified
+Ability to export to excel or pdf (as current table format)
 All items flagged short exp will appear here
 Proper colouring (glow) for nearly exp
-Editable Balance (initial balance retrieved once on first flag)  qty on each table grid (automatic based on date)
-Editable Remarks Input
+Editable quantity (initial qty retrieved once on first flag) qty on each table grid (automatic based on date)
+Editable SERemarks Input (Short Exp Remarks will appear here only when user click on the cell) (not linked to any other remarks in other pages)
+Table columns as follow; The quantity are inside either one of the [6M] [5M] [4M] [3M] [2M] [1M] (6 months to 1 month) depending on the exp date.
+[Item Name] [Batch No] [Exp Date] [6M] [5M] [4M] [3M] [2M] [1M] [SERemarks]
 
 [AdminMenu]
 - Manage user profile either (Indenter) or (Issuer)
 - Create new user & reset user password
 - CRUD inventory
 
+Create User Modal
+- Name
+- Email
+- Password
+- Role (Indenter or Issuer)
 
 
 

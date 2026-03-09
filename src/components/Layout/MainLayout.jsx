@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Typography, Drawer, Button } from 'antd';
+import { Layout, Menu, Typography, Drawer, Button, Avatar, Dropdown } from 'antd';
 import {
     SearchOutlined,
     ShoppingCartOutlined,
@@ -10,37 +10,72 @@ import {
     PushpinOutlined,
     WarningOutlined,
     HistoryOutlined,
+    UserOutlined,
+    LogoutOutlined,
+    HomeOutlined
 } from '@ant-design/icons';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const MainLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
+    const { user, profile, isIssuer, signOut } = useAuth();
 
-    const menuItems = [
+    const handleSignOut = async () => {
+        await signOut();
+        navigate('/login');
+    };
+
+    const userMenu = {
+        items: [
+            {
+                key: 'profile',
+                label: <Text strong>{profile?.name}</Text>,
+                disabled: true
+            },
+            {
+                key: 'role',
+                label: <Text type="secondary">{profile?.role}</Text>,
+                disabled: true
+            },
+            {
+                type: 'divider',
+            },
+            {
+                key: 'logout',
+                icon: <LogoutOutlined />,
+                label: 'Sign Out',
+                onClick: handleSignOut
+            }
+        ]
+    };
+
+    // Base menu items available to all
+    let menuItems = [
+        {
+            key: '/home',
+            icon: <HomeOutlined />,
+            label: 'Home',
+        },
         {
             key: '/indent',
             icon: <FileTextOutlined />,
             label: 'Indent',
         },
         {
-            key: '/cart',
-            icon: <ShoppingCartOutlined />,
-            label: 'Cart',
-        },
-        {
-            key: '/indent-list',
-            icon: <HistoryOutlined />,
-            label: 'Previous Indents',
+            key: '/routine-summary',
+            icon: <PushpinOutlined />,
+            label: 'Draft Summary',
         },
         {
             key: '/shortexp',
             icon: <WarningOutlined />,
-            label: 'Short Exp',
+            label: 'Kew.PS-6',
         },
         {
             key: '/settings',
@@ -48,6 +83,27 @@ const MainLayout = () => {
             label: 'Settings',
         },
     ];
+
+    // Inject Issuer-only menus before settings
+    if (isIssuer) {
+        menuItems.splice(2, 0,
+            {
+                key: '/cart',
+                icon: <ShoppingCartOutlined />,
+                label: 'Cart',
+            },
+            {
+                key: '/indent-list',
+                icon: <HistoryOutlined />,
+                label: 'Records',
+            },
+            {
+                key: '/admin',
+                icon: <SettingOutlined />,
+                label: 'Admin Panel',
+            }
+        );
+    }
 
     const handleMenuClick = ({ key }) => {
         navigate(key);
@@ -84,7 +140,7 @@ const MainLayout = () => {
                         fontSize: '26px',
                         fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                     }}>
-                        OPDHS
+                        OPDHS v2
                     </Title>
                     <Typography.Text style={{
                         color: 'rgba(255,255,255,0.5)',
@@ -167,17 +223,29 @@ const MainLayout = () => {
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     }}
                 >
-                    <Button
-                        type="text"
-                        icon={<MenuOutlined />}
-                        onClick={() => setMobileMenuOpen(true)}
-                        className="mobile-menu-button"
-                        style={{ fontSize: '18px' }}
-                    />
-                    <Title level={4} style={{ margin: 0 }}>
-                        {menuItems.find(item => item.key === location.pathname)?.label || 'OPD-HS'}
-                    </Title>
-                    <div />
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <Button
+                            type="text"
+                            icon={<MenuOutlined />}
+                            onClick={() => setMobileMenuOpen(true)}
+                            className="mobile-menu-button"
+                            style={{ fontSize: '18px', marginRight: 16 }}
+                        />
+                        <Title level={4} style={{ margin: 0 }}>
+                            {menuItems.find(item => item.key === location.pathname)?.label || 'OPD-HS'}
+                        </Title>
+                    </div>
+
+                    <div>
+                        {user && (
+                            <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
+                                <Avatar
+                                    style={{ backgroundColor: '#1890ff', cursor: 'pointer' }}
+                                    icon={<UserOutlined />}
+                                />
+                            </Dropdown>
+                        )}
+                    </div>
                 </Header>
                 <Content className="site-content" style={{ margin: '24px 16px', overflow: 'initial' }}>
                     <div style={{ padding: 24, background: '#fff', minHeight: 360, borderRadius: 8 }}>
