@@ -33,7 +33,10 @@ const UserManagement = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [form] = Form.useForm();
+    const [editForm] = Form.useForm();
+    const [editingUser, setEditingUser] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -103,6 +106,28 @@ const UserManagement = () => {
         }
     };
 
+    const handleUpdateUser = async (values) => {
+        setSubmitting(true);
+        try {
+            const { error } = await supabase.from('profiles').update({
+                name: values.name,
+                role: values.role
+            }).eq('id', editingUser.id);
+
+            if (error) throw error;
+            message.success("User updated successfully");
+            setIsEditModalVisible(false);
+            setEditingUser(null);
+            editForm.resetFields();
+            fetchUsers();
+        } catch (error) {
+            console.error(error);
+            message.error(error.message || "Failed to update user");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const handleDeleteUser = async (user) => {
         // Generally deleting from profiles table won't delete from auth.users, 
         // but it removes their access to the app since RBAC relies on profiles.
@@ -124,12 +149,27 @@ const UserManagement = () => {
             title: 'Actions',
             key: 'actions',
             render: (_, record) => (
-                <Popconfirm
-                    title="Delete user profile?"
-                    onConfirm={() => handleDeleteUser(record)}
-                >
-                    <Button danger icon={<DeleteOutlined />} size="small" />
-                </Popconfirm>
+                <Space>
+                    <Button 
+                        icon={<EditOutlined />} 
+                        size="small" 
+                        onClick={() => {
+                            setEditingUser(record);
+                            editForm.setFieldsValue({
+                                name: record.name,
+                                email: record.email,
+                                role: record.role
+                            });
+                            setIsEditModalVisible(true);
+                        }}
+                    />
+                    <Popconfirm
+                        title="Delete user profile?"
+                        onConfirm={() => handleDeleteUser(record)}
+                    >
+                        <Button danger icon={<DeleteOutlined />} size="small" />
+                    </Popconfirm>
+                </Space>
             )
         }
     ];
@@ -168,6 +208,35 @@ const UserManagement = () => {
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" loading={submitting} block>Create User</Button>
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal
+                title="Edit User"
+                open={isEditModalVisible}
+                onCancel={() => { 
+                    setIsEditModalVisible(false); 
+                    setEditingUser(null);
+                    editForm.resetFields(); 
+                }}
+                footer={null}
+            >
+                <Form layout="vertical" form={editForm} onFinish={handleUpdateUser}>
+                    <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item name="email" label="Email">
+                        <Input disabled />
+                    </Form.Item>
+                    <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+                        <Select>
+                            <Option value="Indenter">Indenter</Option>
+                            <Option value="Issuer">Issuer (Admin)</Option>
+                        </Select>
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit" loading={submitting} block>Update User</Button>
                     </Form.Item>
                 </Form>
             </Modal>

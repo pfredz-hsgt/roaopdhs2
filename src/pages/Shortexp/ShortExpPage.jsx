@@ -8,12 +8,21 @@ import {
     Input,
     Card,
     Spin,
-    Button
+    Button,
+    Modal,
+    Form,
+    Popconfirm,
+    Row,
+    Col,
+    DatePicker,
+    InputNumber
 } from 'antd';
 import {
     CalendarOutlined,
     WarningOutlined,
-    FileExcelOutlined
+    FileExcelOutlined,
+    MoreOutlined,
+    DeleteOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
@@ -26,6 +35,10 @@ const ShortExpPage = () => {
     const [loading, setLoading] = useState(true);
     const [drugs, setDrugs] = useState([]);
     const saveTimeouts = useRef({});
+
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [editingRecord, setEditingRecord] = useState(null);
+    const [form] = Form.useForm();
 
     useEffect(() => {
         fetchShortExpDrugs();
@@ -173,6 +186,94 @@ const ShortExpPage = () => {
         } catch (error) {
             console.error('Failed to save remark:', error);
             message.error("Failed to save remark!");
+        }
+    };
+
+    const openEditModal = (record) => {
+        setEditingRecord(record);
+        form.setFieldsValue({
+            batch_no: record.batch_no,
+            exp_date: record.exp_date ? dayjs(record.exp_date) : null,
+            qty: record.qty,
+            se_remarks: record.se_remarks
+        });
+        setIsEditModalVisible(true);
+    };
+
+    const handleEditModalCancel = () => {
+        setIsEditModalVisible(false);
+        setEditingRecord(null);
+        form.resetFields();
+    };
+
+    const handleEditSubmit = async (values) => {
+        try {
+            const isB1 = editingRecord.id.endsWith('_b1');
+            const expDateStr = values.exp_date ? values.exp_date.format('YYYY-MM-DD') : null;
+
+            // Update indent_items for batch_no, exp_date, short_qty
+            const indentUpdate = isB1 ? {
+                batch_no_1: values.batch_no,
+                exp_date_1: expDateStr,
+                short_qty_1: values.qty
+            } : {
+                batch_no_2: values.batch_no,
+                exp_date_2: expDateStr,
+                short_qty_2: values.qty
+            };
+
+            const { error: indentError } = await supabase
+                .from('indent_items')
+                .update(indentUpdate)
+                .eq('id', editingRecord.original_id);
+
+            if (indentError) throw indentError;
+
+            // Update kewps6_records for se_remarks
+            if (values.se_remarks !== undefined) {
+                await saveToDatabase({
+                    item_id: editingRecord.item_id,
+                    batch_no: values.batch_no,
+                    exp_date: expDateStr,
+                    qty: values.qty
+                }, values.se_remarks);
+            }
+
+            message.success('Record updated successfully');
+            setIsEditModalVisible(false);
+            setEditingRecord(null);
+            fetchShortExpDrugs();
+        } catch (error) {
+            console.error('Error updating record:', error);
+            message.error('Failed to update record');
+        }
+    };
+
+    const handleDelete = async (record) => {
+        try {
+            const isB1 = record.id.endsWith('_b1');
+            const indentUpdate = isB1 ? {
+                batch_no_1: null,
+                exp_date_1: null,
+                short_qty_1: null
+            } : {
+                batch_no_2: null,
+                exp_date_2: null,
+                short_qty_2: null
+            };
+
+            const { error: indentError } = await supabase
+                .from('indent_items')
+                .update(indentUpdate)
+                .eq('id', record.original_id);
+
+            if (indentError) throw indentError;
+
+            message.success('Record deleted successfully');
+            fetchShortExpDrugs();
+        } catch (error) {
+            console.error('Error deleting record:', error);
+            message.error('Failed to delete record');
         }
     };
 
@@ -384,9 +485,78 @@ const ShortExpPage = () => {
                         rowKey="id"
                         scroll={{ x: 1200 }}
                         pagination={{ pageSize: 20 }}
+                        onRow={(record) => ({
+                            onClick: () => {
+                                openEditModal(record);
+                            },
+                        })}
+                        rowClassName={() => 'clickable-row'}
                     />
                 </Card>
             </Space>
+
+            <style>{`
+                .clickable-row {
+                    cursor: pointer;
+                }
+                .clickable-row:hover td {
+                    background-color: #f5f5f5 !important;
+                }
+            `}</style>
+
+            <Modal
+                title={
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: 24 }}>
+                        <span>Edit Short Expiry Record</span>
+                        <Popconfirm
+                            title="Delete batch record?"
+                            description="This will clear the batch info."
+                            onConfirm={() => {
+                                handleDelete(editingRecord);
+                                setIsEditModalVisible(false);
+                            }}
+                            okText="Yes"
+                            cancelText="No"
+                            placement="bottomRight"
+                        >
+                            <Button type="text" danger icon={<DeleteOutlined />} onClick={e => e.stopPropagation()} />
+                        </Popconfirm>
+                    </div>
+                }
+                open={isEditModalVisible}
+                onOk={() => form.submit()}
+                onCancel={handleEditModalCancel}
+                destroyOnClose
+                closable={false}
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleEditSubmit}
+                >
+                    <Form.Item label="Drug Name">
+                        <Input value={editingRecord?.name} disabled />
+                    </Form.Item>
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item label="Batch No" name="batch_no" rules={[{ required: true, message: 'Please enter Batch No' }]}>
+                                <Input />
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item label="Expiry Date" name="exp_date" rules={[{ required: true, message: 'Please select Expiry Date' }]}>
+                                <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Form.Item label="Quantity (Short Expiry)" name="qty">
+                        <InputNumber min={0} style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item label="Remarks" name="se_remarks">
+                        <Input.TextArea rows={2} />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 };

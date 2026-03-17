@@ -13,6 +13,7 @@ import {
     Modal,
     Popconfirm,
     Checkbox,
+    InputNumber,
 } from 'antd';
 import {
     HistoryOutlined,
@@ -35,6 +36,12 @@ const CartPage = () => {
     const [loading, setLoading] = useState(true);
     const [sessions, setSessions] = useState([]);
     const [selectedSessions, setSelectedSessions] = useState([]);
+
+    // Edit Modal State
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+    const [newQuantity, setNewQuantity] = useState(0);
+    const [updatingQty, setUpdatingQty] = useState(false);
 
     useEffect(() => {
         fetchCartSessions();
@@ -60,6 +67,22 @@ const CartPage = () => {
 
             if (sessionError) throw sessionError;
 
+            // Fetch pending Ad-hoc indent_requests
+            const { data: requestsData, error: requestsError } = await supabase
+                .from('indent_requests')
+                .select(`
+                    id,
+                    created_at,
+                    requested_qty,
+                    status,
+                    inventory_items(*),
+                    profiles(name)
+                `)
+                .eq('status', 'Pending')
+                .order('created_at', { ascending: true });
+
+            if (requestsError) throw requestsError;
+
             // Sort items inside each session alphabetically
             const processedSessions = (sessionsData || [])
                 .map(sess => {
@@ -72,6 +95,45 @@ const CartPage = () => {
                 })
                 .filter(sess => sess.indent_items.length > 0);
 
+            // Map indent_requests to a mock session grouped by user
+            if (requestsData && requestsData.length > 0) {
+                // Group by profile name
+                const groupedRequests = requestsData.reduce((acc, req) => {
+                    const profileName = req.profiles?.name || 'Unknown Indenter';
+                    if (!acc[profileName]) {
+                        acc[profileName] = [];
+                    }
+                    acc[profileName].push(req);
+                    return acc;
+                }, {});
+
+                // Create a session for each group
+                Object.entries(groupedRequests).forEach(([profileName, reqs], index) => {
+                    const mappedItems = reqs.map(req => ({
+                        id: `req-${req.id}`,
+                        original_req_id: req.id,
+                        item_id: req.inventory_items?.id,
+                        requested_qty: req.requested_qty,
+                        indent_remarks: null,
+                        inventory_items: req.inventory_items,
+                        created_at: req.created_at
+                    })).sort((a, b) =>
+                        (a.inventory_items?.name || '').localeCompare(b.inventory_items?.name || '')
+                    );
+
+                    processedSessions.push({
+                        id: `adhoc-requests-${profileName}-${index}`, // Make id unique per group
+                        created_at: reqs[0].created_at,
+                        session_type: 'Urgent Indent',
+                        rak: null,
+                        profiles: { name: profileName },
+                        indent_items: mappedItems,
+                        isAdhocRequests: true,
+                        profileName: profileName // useful for clearing logic
+                    });
+                });
+            }
+
             setSessions(processedSessions);
             setSelectedSessions(processedSessions.map(s => s.id));
 
@@ -83,15 +145,70 @@ const CartPage = () => {
         }
     };
 
+    const handleUpdateQuantity = async () => {
+        if (!editingItem) return;
+
+        try {
+            setUpdatingQty(true);
+
+            if (editingItem.original_req_id) {
+                // Update Ad-hoc Request
+                if (newQuantity === 0) {
+                    const { error } = await supabase.from('indent_requests').delete().eq('id', editingItem.original_req_id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('indent_requests').update({ requested_qty: newQuantity }).eq('id', editingItem.original_req_id);
+                    if (error) throw error;
+                }
+            } else {
+                // Update Session Item
+                if (newQuantity === 0) {
+                    const { error } = await supabase.from('indent_items').delete().eq('id', editingItem.id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('indent_items').update({ requested_qty: newQuantity }).eq('id', editingItem.id);
+                    if (error) throw error;
+                }
+            }
+
+            message.success('Quantity updated successfully');
+            setEditModalVisible(false);
+            fetchCartSessions(); // Refresh data
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+            message.error('Failed to update quantity');
+        } finally {
+            setUpdatingQty(false);
+        }
+    };
+
     const handleClearSession = async (sessionId) => {
         try {
-            // Mark as Approved/Completed
-            const { error } = await supabase
-                .from('indent_sessions')
-                .update({ status: 'Approved' })
-                .eq('id', sessionId);
+            // Find if this session is an adhoc session
+            const session = sessions.find(s => s.id === sessionId);
 
-            if (error) throw error;
+            if (session && session.isAdhocRequests) {
+                // If this is an adhoc-requests group, we need to extract the original request IDs
+                // and mark ONLY those requests as Approved to avoid clearing requests from other users
+                const requestIdsToApprove = session.indent_items.map(item => item.original_req_id);
+
+                if (requestIdsToApprove.length > 0) {
+                    const { error } = await supabase
+                        .from('indent_requests')
+                        .update({ status: 'Approved' })
+                        .in('id', requestIdsToApprove);
+
+                    if (error) throw error;
+                }
+            } else {
+                // Mark as Approved/Completed
+                const { error } = await supabase
+                    .from('indent_sessions')
+                    .update({ status: 'Approved' })
+                    .eq('id', sessionId);
+
+                if (error) throw error;
+            }
 
             message.success('Indent Session cleared successfully!');
             fetchCartSessions();
@@ -334,7 +451,15 @@ const CartPage = () => {
                                 <List
                                     dataSource={session.indent_items}
                                     renderItem={(item) => (
-                                        <List.Item style={{ padding: '12px 0' }}>
+                                        <List.Item
+                                            style={{ padding: '12px 0', cursor: 'pointer' }}
+                                            onClick={() => {
+                                                setEditingItem(item);
+                                                setNewQuantity(item.requested_qty);
+                                                setEditModalVisible(true);
+                                            }}
+                                            className="hover:bg-gray-50 transition-colors"
+                                        >
                                             <List.Item.Meta
                                                 title={
                                                     <Space>
@@ -369,6 +494,70 @@ const CartPage = () => {
                     </Collapse>
                 )}
             </Space>
+
+            <Modal
+                title="Edit Quantity"
+                open={editModalVisible}
+                onCancel={() => setEditModalVisible(false)}
+                confirmLoading={updatingQty}
+                width={'350px'}
+                onOk={handleUpdateQuantity}
+            >
+                {editingItem && editingItem.inventory_items && (
+                    <div style={{ padding: '10px 0', textAlign: 'center' }}>
+                        <Title level={4} style={{ marginBottom: 4 }}>
+                            {editingItem.inventory_items.name}
+                        </Title>
+                        
+                        {/* Item Code and PKU */}
+                        <Space size="large" style={{ marginBottom: 12 }}>
+                            {editingItem.inventory_items.item_code && (
+                                <Text type="secondary" style={{ fontSize: '13px' }}>
+                                    <Text strong copyable>{editingItem.inventory_items.item_code}</Text>
+                                </Text>
+                            )}
+                            {editingItem.inventory_items.pku && (
+                                <Text type="secondary" style={{ fontSize: '13px' }}>
+                                    PKU: <Text strong>{editingItem.inventory_items.pku}</Text>
+                                </Text>
+                            )}
+                        </Space> <br />
+
+                        {/* Tags */}
+                        <Space wrap style={{ marginBottom: 16, justifyContent: 'center' }}>
+                            {editingItem.inventory_items.puchase_type && (
+                                <Tag color={getPuchaseTypeColor(editingItem.inventory_items.puchase_type)}>
+                                    {editingItem.inventory_items.puchase_type}
+                                </Tag>
+                            )}
+                            {editingItem.inventory_items.std_kt && (
+                                <Tag color={getStdKtColor(editingItem.inventory_items.std_kt)}>
+                                    {editingItem.inventory_items.std_kt}
+                                </Tag>
+                            )}
+                            {editingItem.inventory_items.row && <Tag>Row: {editingItem.inventory_items.row}</Tag>}
+                            {editingItem.inventory_items.max_qty && <Tag color="orange">Max Qty: {editingItem.inventory_items.max_qty}</Tag>}
+                            {editingItem.inventory_items.balance !== null && <Tag color="blue">Balance: {editingItem.inventory_items.balance}</Tag>}
+                        </Space>
+
+                        <div style={{ marginTop: 12, marginBottom: 24, padding: '16px', background: '#f5f5f5', borderRadius: '8px' }}>
+                            <Space align="center" size="middle">
+                                <Text strong style={{ fontSize: '16px' }}>Request Quantity:</Text>
+                                <InputNumber
+                                    min={0}
+                                    value={newQuantity}
+                                    onChange={setNewQuantity}
+                                    size="large"
+                                    autoFocus
+                                />
+                            </Space>
+                            <div style={{ marginTop: 8 }}>
+                                <Text type="secondary" italic>Set to 0 to remove this item from the cart</Text>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

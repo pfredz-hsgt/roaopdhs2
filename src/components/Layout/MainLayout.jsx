@@ -63,30 +63,26 @@ const MainLayout = () => {
             label: 'Home',
         },
         {
-            key: '/indent',
-            icon: <FileTextOutlined />,
-            label: 'Indent',
-        },
-        {
             key: '/routine-summary',
             icon: <PushpinOutlined />,
-            label: 'Draft Summary',
+            label: 'Routine Indent',
+        },
+        {
+            key: '/indent',
+            icon: <FileTextOutlined />,
+            label: 'Urgent Indent',
         },
         {
             key: '/shortexp',
             icon: <WarningOutlined />,
             label: 'Kew.PS-6',
         },
-        {
-            key: '/settings',
-            icon: <SettingOutlined />,
-            label: 'Settings',
-        },
+
     ];
 
     // Inject Issuer-only menus before settings
     if (isIssuer) {
-        menuItems.splice(2, 0,
+        menuItems.splice(4, 0,
             {
                 key: '/cart',
                 icon: <ShoppingCartOutlined />,
@@ -101,6 +97,11 @@ const MainLayout = () => {
                 key: '/admin',
                 icon: <SettingOutlined />,
                 label: 'Admin Panel',
+            },
+            {
+                key: '/settings',
+                icon: <SettingOutlined />,
+                label: 'Settings',
             }
         );
     }
@@ -133,14 +134,14 @@ const MainLayout = () => {
                         margin: 0,
                         letterSpacing: '6px',
                         fontWeight: 450,
-                        background: 'linear-gradient(to right, #ff9966 0%, #ff5e62 100%)',
+                        background: 'linear-gradient(to right, #66fff7ff 0%, #67ffd9ff 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         textTransform: 'uppercase',
                         fontSize: '26px',
                         fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                     }}>
-                        OPDHS v2
+                        ARISE
                     </Title>
                     <Typography.Text style={{
                         color: 'rgba(255,255,255,0.5)',
@@ -151,7 +152,7 @@ const MainLayout = () => {
                         marginTop: '4px',
                         fontWeight: 400
                     }}>
-                        ROA OPD<br />Hosp Segamat
+                        Farmasi Pesakit Luar<br />Hospital Segamat
                     </Typography.Text>
                 </div>
                 <Menu

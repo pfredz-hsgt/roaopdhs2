@@ -23,11 +23,13 @@ import { supabase } from '../../lib/supabase';
 import { getSourceColor, getPuchaseTypeColor, getStdKtColor } from '../../lib/colorMappings';
 import dayjs from 'dayjs';
 import CustomDateInput from '../../components/CustomDateInput';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 500 }) => {
+    const { user } = useAuth();
     const [form] = Form.useForm();
     const [editForm] = Form.useForm();
     const [loading, setLoading] = useState(false);
@@ -183,6 +185,7 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                     item_id: drug.id,
                     requested_qty: values.quantity,
                     status: 'Pending',
+                    user_id: user.id,
                 });
 
             if (error) throw error;

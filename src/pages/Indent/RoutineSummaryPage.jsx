@@ -247,29 +247,7 @@ const RoutineSummaryPage = () => {
             key: 'remarks',
             render: (text) => text || <Text type="secondary" italic>No remarks</Text>
         },
-        {
-            title: 'Short Expiry Details',
-            key: 'shortExp',
-            render: (_, record) => {
-                if (!record.batch_no_1 && !record.batch_no_2) return "-";
-                return (
-                    <div style={{ fontSize: '12px' }}>
-                        {record.batch_no_1 && (
-                            <div>
-                                <Tag color="volcano">{record.batch_no_1}</Tag>
-                                {dayjs(record.exp_date_1).format('DD/MM/YYYY')} (Qty: {record.short_qty_1})
-                            </div>
-                        )}
-                        {record.batch_no_2 && (
-                            <div style={{ marginTop: 4 }}>
-                                <Tag color="volcano">{record.batch_no_2}</Tag>
-                                {dayjs(record.exp_date_2).format('DD/MM/YYYY')} (Qty: {record.short_qty_2})
-                            </div>
-                        )}
-                    </div>
-                );
-            }
-        },
+
         {
             title: 'Requested Qty',
             key: 'qty',
