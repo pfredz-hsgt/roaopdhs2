@@ -186,6 +186,9 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                     requested_qty: values.quantity,
                     status: 'Pending',
                     user_id: user.id,
+                    snapshot_max_qty: maxQty,
+                    snapshot_balance: balance,
+                    indent_remarks: values.remarks || null,
                 });
 
             if (error) throw error;
@@ -339,6 +342,7 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                                         style={{ width: '100%' }}
                                         min={0}
                                         size="large"
+                                        inputMode="numeric"
                                     />
                                 </div>
                             </Col>
@@ -354,6 +358,7 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                                         style={{ width: '100%' }}
                                         min={0}
                                         size="large"
+                                        inputMode="numeric"
                                     />
                                 </div>
                             </Col>
@@ -421,6 +426,7 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                         onFinish={handleSubmit}
                         initialValues={{
                             quantity: '',
+                            remarks: '',
                         }}
                     >
                         <Form.Item
@@ -445,8 +451,16 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                                 placeholder="Enter quantity"
                                 min={0}
                                 size="large"
+                                inputMode="numeric"
                                 onChange={handleQuantityChange}
                             />
+                        </Form.Item>
+
+                        <Form.Item
+                            name="remarks"
+                            label="Remarks"
+                        >
+                            <Input.TextArea placeholder="Enter remarks (optional)" rows={2} />
                         </Form.Item>
 
                         <Form.Item style={{ marginBottom: 0 }}>
@@ -526,11 +540,11 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                         </Form.Item>
 
                         <Form.Item name="max_qty" label="Max Quantity">
-                            <InputNumber placeholder="Max Qty" style={{ width: 120 }} min={0} />
+                            <InputNumber placeholder="Max Qty" style={{ width: 120 }} min={0} inputMode="numeric" />
                         </Form.Item>
 
                         <Form.Item name="balance" label="Balance">
-                            <InputNumber placeholder="Balance" style={{ width: 120 }} min={0} />
+                            <InputNumber placeholder="Balance" style={{ width: 120 }} min={0} inputMode="numeric" />
                         </Form.Item>
                     </Space>
 

@@ -75,6 +75,7 @@ const CartPage = () => {
                     created_at,
                     requested_qty,
                     status,
+                    indent_remarks,
                     inventory_items(*),
                     profiles(name)
                 `)
@@ -114,7 +115,7 @@ const CartPage = () => {
                         original_req_id: req.id,
                         item_id: req.inventory_items?.id,
                         requested_qty: req.requested_qty,
-                        indent_remarks: null,
+                        indent_remarks: req.indent_remarks,
                         inventory_items: req.inventory_items,
                         created_at: req.created_at
                     })).sort((a, b) =>
@@ -249,7 +250,7 @@ const CartPage = () => {
 
         const tableData = session.indent_items.map((item, idx) => [
             (idx + 1).toString(),
-            (item.inventory_items?.name || '') + (item.inventory_items?.pku ? ` | ${item.inventory_items.pku}` : ''),
+            (item.inventory_items?.name || '') + (item.inventory_items?.pku ? `<Tag color="cyan">${item.inventory_items.pku}</Tag>` : ''),
             item.requested_qty || 0,
             item.indent_remarks || '',
             '', // Kuantiti Diluluskan
@@ -474,14 +475,14 @@ const CartPage = () => {
                                                             </Tag>
                                                         )}
                                                         <Text strong>{item.inventory_items?.name}</Text>
-                                                        {item.inventory_items?.pku && (<Text>| PKU: {item.inventory_items?.pku}</Text>)}
+                                                        {item.inventory_items?.pku && (<Tag color="cyan">{item.inventory_items?.pku}</Tag>)}
                                                     </Space>
                                                 }
                                                 description={
                                                     <Space style={{ marginTop: 4 }}>
-                                                        <Tag color="default">Requested: <Text strong>{item.requested_qty}</Text></Tag>
+                                                        <Text color="default">Requested: <Text strong>{item.requested_qty}</Text></Text>
                                                         {item.indent_remarks && (
-                                                            <Text type="secondary" italic>"{item.indent_remarks}"</Text>
+                                                            <Text italic>Remarks: {item.indent_remarks}</Text>
                                                         )}
                                                     </Space>
                                                 }
@@ -500,7 +501,7 @@ const CartPage = () => {
                 open={editModalVisible}
                 onCancel={() => setEditModalVisible(false)}
                 confirmLoading={updatingQty}
-                width={'350px'}
+                width={'450px'}
                 onOk={handleUpdateQuantity}
             >
                 {editingItem && editingItem.inventory_items && (
@@ -508,12 +509,12 @@ const CartPage = () => {
                         <Title level={4} style={{ marginBottom: 4 }}>
                             {editingItem.inventory_items.name}
                         </Title>
-                        
+
                         {/* Item Code and PKU */}
                         <Space size="large" style={{ marginBottom: 12 }}>
                             {editingItem.inventory_items.item_code && (
                                 <Text type="secondary" style={{ fontSize: '13px' }}>
-                                    <Text strong copyable>{editingItem.inventory_items.item_code}</Text>
+                                    <Text>{editingItem.inventory_items.item_code}</Text>
                                 </Text>
                             )}
                             {editingItem.inventory_items.pku && (
@@ -524,7 +525,7 @@ const CartPage = () => {
                         </Space> <br />
 
                         {/* Tags */}
-                        <Space wrap style={{ marginBottom: 16, justifyContent: 'center' }}>
+                        <Space wrap style={{ marginBottom: 12, justifyContent: 'center' }}>
                             {editingItem.inventory_items.puchase_type && (
                                 <Tag color={getPuchaseTypeColor(editingItem.inventory_items.puchase_type)}>
                                     {editingItem.inventory_items.puchase_type}
@@ -536,25 +537,69 @@ const CartPage = () => {
                                 </Tag>
                             )}
                             {editingItem.inventory_items.row && <Tag>Row: {editingItem.inventory_items.row}</Tag>}
-                            {editingItem.inventory_items.max_qty && <Tag color="orange">Max Qty: {editingItem.inventory_items.max_qty}</Tag>}
-                            {editingItem.inventory_items.balance !== null && <Tag color="blue">Balance: {editingItem.inventory_items.balance}</Tag>}
                         </Space>
 
-                        <div style={{ marginTop: 12, marginBottom: 24, padding: '16px', background: '#f5f5f5', borderRadius: '8px' }}>
-                            <Space align="center" size="middle">
-                                <Text strong style={{ fontSize: '16px' }}>Request Quantity:</Text>
+                        {/* Inventory Info */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-around',
+                            background: '#fafafa',
+                            padding: '12px 0',
+                            borderRadius: '6px',
+                            border: '1px solid #f0f0f0',
+                            marginBottom: 16
+                        }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>Max Qty</Text>
+                                <Text strong style={{ fontSize: '18px', color: '#fa8c16' }}>
+                                    {editingItem.inventory_items.max_qty !== null ? editingItem.inventory_items.max_qty : '-'}
+                                </Text>
+                            </div>
+                            <div style={{ width: '1px', background: '#d9d9d9', margin: '0 8px' }}></div>
+                            <div style={{ textAlign: 'center' }}>
+                                <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>Balance</Text>
+                                <Text strong style={{ fontSize: '18px', color: '#1890ff' }}>
+                                    {editingItem.inventory_items.balance !== null ? editingItem.inventory_items.balance : '-'}
+                                </Text>
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '16px', background: '#f0f2f5', borderRadius: '8px' }}>
+                            <Space align="center" size="middle" direction="vertical" style={{ width: '100%' }}>
+                                <Text strong style={{ fontSize: '15px' }}>Request Quantity</Text>
                                 <InputNumber
                                     min={0}
                                     value={newQuantity}
                                     onChange={setNewQuantity}
                                     size="large"
                                     autoFocus
+                                    inputMode="numeric"
+                                    style={{ width: '120px' }}
                                 />
                             </Space>
-                            <div style={{ marginTop: 8 }}>
-                                <Text type="secondary" italic>Set to 0 to remove this item from the cart</Text>
+
+                            <div style={{ marginTop: 12 }}>
+                                <Text type="secondary" style={{ fontSize: '12px' }}>Set to 0 to remove this item</Text>
                             </div>
+
                         </div>
+                        {/* Indent Remarks (if available) */}
+                        {editingItem.indent_remarks && (
+                            <div style={{
+                                marginTop: 16,
+                                marginBottom: 16,
+                                padding: '8px 12px',
+                                background: '#e6f7ff',
+                                border: '1px solid #91d5ff',
+                                borderRadius: '4px',
+                                textAlign: 'left'
+                            }}>
+                                <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                                    Remarks:
+                                </Text>
+                                <Text>{editingItem.indent_remarks}</Text>
+                            </div>
+                        )}
                     </div>
                 )}
             </Modal>

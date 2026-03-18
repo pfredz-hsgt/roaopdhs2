@@ -30,7 +30,7 @@ const IndentRecordPage = () => {
             if (usersData) setUsers(usersData);
 
             // Fetch COMPLETED or SUBMITTED sessions (Historical)
-            const { data, error } = await supabase
+            const { data: sessionData, error: sessionError } = await supabase
                 .from('indent_sessions')
                 .select(`
                     id, 
@@ -43,8 +43,69 @@ const IndentRecordPage = () => {
                 .in('status', ['Submitted', 'Approved', 'Completed'])
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            setSessions(data || []);
+            if (sessionError) throw sessionError;
+
+            // Fetch Approved or Completed urgent indents
+            const { data: requestsData, error: requestsError } = await supabase
+                .from('indent_requests')
+                .select(`
+                    id,
+                    created_at,
+                    requested_qty,
+                    status,
+                    snapshot_max_qty,
+                    snapshot_balance,
+                    indent_remarks,
+                    inventory_items(name),
+                    profiles(name)
+                `)
+                .in('status', ['Approved', 'Completed'])
+                .order('created_at', { ascending: false });
+
+            if (requestsError) throw requestsError;
+
+            let processedSessions = sessionData || [];
+
+            if (requestsData && requestsData.length > 0) {
+                // Group requests by user and date (YYYY-MM-DD)
+                const groupedRequests = requestsData.reduce((acc, req) => {
+                    const profileName = req.profiles?.name || 'Unknown Indenter';
+                    const dateKey = dayjs(req.created_at).format('YYYY-MM-DD');
+                    const key = `${profileName}-${dateKey}`;
+                    if (!acc[key]) {
+                        acc[key] = {
+                            id: `adhoc-${key}`,
+                            created_at: req.created_at, // Use first request's time
+                            status: req.status,
+                            session_type: 'Urgent Indent',
+                            rak: null,
+                            profiles: { name: profileName },
+                            isAdhocRequests: true,
+                            items: []
+                        };
+                    }
+                    // Add item
+                    acc[key].items.push({
+                        id: req.id,
+                        requested_qty: req.requested_qty,
+                        snapshot_max_qty: req.snapshot_max_qty,
+                        snapshot_balance: req.snapshot_balance,
+                        indent_remarks: req.indent_remarks,
+                        inventory_items: req.inventory_items
+                    });
+                    // For the group status, if any is 'Approved' keep it, else it will be the status of the item
+                    if (req.status === 'Approved') {
+                        acc[key].status = 'Approved';
+                    }
+                    return acc;
+                }, {});
+
+                processedSessions = [...processedSessions, ...Object.values(groupedRequests)];
+                // Sort combined
+                processedSessions.sort((a, b) => dayjs(b.created_at).unix() - dayjs(a.created_at).unix());
+            }
+
+            setSessions(processedSessions);
         } catch (error) {
             message.error("Failed to load records");
             console.error(error);
@@ -103,13 +164,16 @@ const IndentRecordPage = () => {
             }
         },
         {
-            title: 'Total Items',
+            title: 'Items',
             key: 'totalItems',
-            render: () => <span style={{ color: '#888' }}>Click Expand</span> // We will rely on expandable rows for details
+            render: () => <span style={{ color: '#888' }}>Click to Expand</span> // We will rely on expandable rows for details
         }
     ];
 
     const expandedRowRender = (record) => {
+        if (record.isAdhocRequests) {
+            return <ExpandedItemsTable adhocItems={record.items} />;
+        }
         return <ExpandedItemsTable sessionId={record.id} />;
     };
 
@@ -149,11 +213,17 @@ const IndentRecordPage = () => {
 };
 
 // Subcomponent to lazy load items for a given session when expanded
-const ExpandedItemsTable = ({ sessionId }) => {
+const ExpandedItemsTable = ({ sessionId, adhocItems }) => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (adhocItems) {
+            setItems(adhocItems);
+            setLoading(false);
+            return;
+        }
+
         const fetchItems = async () => {
             const { data, error } = await supabase
                 .from('indent_items')
@@ -164,12 +234,12 @@ const ExpandedItemsTable = ({ sessionId }) => {
             setLoading(false);
         };
         fetchItems();
-    }, [sessionId]);
+    }, [sessionId, adhocItems]);
 
     const itemColumns = [
         { title: 'Item', dataIndex: ['inventory_items', 'name'], key: 'name' },
-        { title: 'Max Qty (Snapshot)', dataIndex: 'snapshot_max_qty', key: 'max_qty', render: t => t !== null && t !== undefined ? t : '-' },
-        { title: 'Balance (Snapshot)', dataIndex: 'snapshot_balance', key: 'balance', render: t => t !== null && t !== undefined ? t : '-' },
+        { title: 'Max Qty', dataIndex: 'snapshot_max_qty', key: 'max_qty', render: t => t !== null && t !== undefined ? t : '-' },
+        { title: 'Balance', dataIndex: 'snapshot_balance', key: 'balance', render: t => t !== null && t !== undefined ? t : '-' },
         { title: 'Indent Qty', dataIndex: 'requested_qty', key: 'qty' },
         { title: 'Remarks', dataIndex: 'indent_remarks', key: 'remarks', render: t => t || '-' }
     ];

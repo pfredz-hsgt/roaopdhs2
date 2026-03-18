@@ -144,7 +144,7 @@ const KewPS6Page = () => {
             dataIndex: 'qty_6m',
             width: 80,
             render: (val, record) => (
-                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} onChange={v => handleFieldChange(record.id, 'qty_6m', v)} />
+                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} inputMode="numeric" onChange={v => handleFieldChange(record.id, 'qty_6m', v)} />
             )
         },
         {
@@ -152,7 +152,7 @@ const KewPS6Page = () => {
             dataIndex: 'qty_5m',
             width: 80,
             render: (val, record) => (
-                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} onChange={v => handleFieldChange(record.id, 'qty_5m', v)} />
+                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} inputMode="numeric" onChange={v => handleFieldChange(record.id, 'qty_5m', v)} />
             )
         },
         {
@@ -160,7 +160,7 @@ const KewPS6Page = () => {
             dataIndex: 'qty_4m',
             width: 80,
             render: (val, record) => (
-                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} onChange={v => handleFieldChange(record.id, 'qty_4m', v)} />
+                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} inputMode="numeric" onChange={v => handleFieldChange(record.id, 'qty_4m', v)} />
             )
         },
         {
@@ -168,7 +168,7 @@ const KewPS6Page = () => {
             dataIndex: 'qty_3m',
             width: 80,
             render: (val, record) => (
-                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} onChange={v => handleFieldChange(record.id, 'qty_3m', v)} />
+                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} inputMode="numeric" onChange={v => handleFieldChange(record.id, 'qty_3m', v)} />
             )
         },
         {
@@ -176,7 +176,7 @@ const KewPS6Page = () => {
             dataIndex: 'qty_2m',
             width: 80,
             render: (val, record) => (
-                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} onChange={v => handleFieldChange(record.id, 'qty_2m', v)} />
+                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} inputMode="numeric" onChange={v => handleFieldChange(record.id, 'qty_2m', v)} />
             )
         },
         {
@@ -184,7 +184,7 @@ const KewPS6Page = () => {
             dataIndex: 'qty_1m',
             width: 80,
             render: (val, record) => (
-                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} onChange={v => handleFieldChange(record.id, 'qty_1m', v)} />
+                <InputNumber min={0} value={val} size="small" style={{ width: 60 }} inputMode="numeric" onChange={v => handleFieldChange(record.id, 'qty_1m', v)} />
             )
         },
         {

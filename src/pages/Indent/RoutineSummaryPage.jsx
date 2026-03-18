@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Table, Button, message, InputNumber, Card, Space, Tag, Modal, Spin } from 'antd';
-import { SendOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Typography, Table, Button, message, InputNumber, Card, Space, Tag, Modal, Spin, Grid, List } from 'antd';
+import { SendOutlined, ExclamationCircleOutlined, UnorderedListOutlined, TableOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,14 +8,22 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
+const { useBreakpoint } = Grid;
 
 const RoutineSummaryPage = () => {
-    const { user } = useAuth();
+    const screens = useBreakpoint();
+    const isDesktop = screens.lg;
+    const { user, profile } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [sessionData, setSessionData] = useState(null);
     const [indentItems, setIndentItems] = useState([]);
+    const [viewMode, setViewMode] = useState(isDesktop ? 'table' : 'list');
+
+    useEffect(() => {
+        setViewMode(isDesktop ? 'table' : 'list');
+    }, [isDesktop]);
 
     useEffect(() => {
         fetchSummaryData();
@@ -38,7 +46,7 @@ const RoutineSummaryPage = () => {
             if (sessionError) throw sessionError;
 
             if (!session) {
-                message.info("You don't have any active indent drafts at the moment.");
+                message.info({ content: "You don't have any active indent drafts at the moment.", key: 'no-drafts' });
                 navigate('/home');
                 return;
             }
@@ -256,52 +264,122 @@ const RoutineSummaryPage = () => {
                 <InputNumber
                     min={0}
                     value={record.requested_qty}
+                    inputMode="numeric"
                     onChange={(val) => handleUpdateQty(record.id, val, record)}
                 />
             )
         }
     ];
 
+    const handleResume = () => {
+        if (!sessionData?.rak) {
+            navigate(-1);
+            return;
+        }
+
+        const firstZeroItem = indentItems.find(item => item.requested_qty === 0 || !item.requested_qty);
+        let url = `/routine-indent?rak=${sessionData.rak}`;
+        if (firstZeroItem) {
+            url += `&resumeItemId=${firstZeroItem.item_id}`;
+        }
+
+        navigate(url);
+    };
+
     if (loading) {
         return <div style={{ textAlign: 'center', padding: 50 }}><Spin size="large" /></div>;
     }
 
+    const renderListItem = (record) => (
+        <List.Item>
+            <Card size="small" style={{ width: '100%', borderColor: record.requested_qty > 0 ? '#00df43ff' : undefined }}>
+                <div style={{ marginBottom: '8px' }}>
+                    <Text strong>{record.inventory_items?.name}</Text>
+                    {record.inventory_items?.pku && (
+                        <Tag color="orange" style={{ marginLeft: 8 }}>{record.inventory_items.pku}</Tag>
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
+                    <Text type="secondary">Max: <Text strong>{record.inventory_items?.max_qty ?? 0}</Text></Text>
+                    <Text type="secondary">Bal: <Text strong>{record.inventory_items?.balance ?? 0}</Text></Text>
+                </div>
+                {record.indent_remarks && (
+                    <div style={{ marginBottom: '8px' }}>
+                        <Text type="secondary" italic>{record.indent_remarks}</Text>
+                    </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
+                    <Text strong>Requested Qty:</Text>
+                    <InputNumber
+                        min={0}
+                        value={record.requested_qty}
+                        inputMode="numeric"
+                        onChange={(val) => handleUpdateQty(record.id, val, record)}
+                        style={{ width: '120px' }}
+                    />
+                </div>
+            </Card>
+        </List.Item>
+    );
+
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
                 <div>
                     <Title level={3} style={{ margin: 0 }}>Indent Summary</Title>
-                    <Text type="secondary">Review your draft before sending.</Text>
+                    <Text type="secondary">Created by: {profile?.name} at {dayjs(sessionData?.created_at).format('DD/MM/YYYY HH:mm:ss')}</Text>
                 </div>
-                {sessionData?.rak && (
-                    <Tag color="blue" style={{ fontSize: '16px', padding: '4px 12px' }}>Rak: {sessionData.rak}</Tag>
-                )}
+                <Space wrap>
+                    {sessionData?.rak && (
+                        <Tag color="blue" style={{ fontSize: '16px', padding: '4px 12px' }}>Rak: {sessionData.rak}</Tag>
+                    )}
+                    <Space>
+                        <Button
+                            type={viewMode === 'list' ? 'primary' : 'default'}
+                            icon={<UnorderedListOutlined />}
+                            onClick={() => setViewMode('list')}
+                        />
+                        <Button
+                            type={viewMode === 'table' ? 'primary' : 'default'}
+                            icon={<TableOutlined />}
+                            onClick={() => setViewMode('table')}
+                        />
+                    </Space>
+                </Space>
             </div>
 
-            <Card style={{ marginBottom: 24 }} bodyStyle={{ padding: 0 }}>
-                <Table
-                    columns={columns}
-                    dataSource={indentItems}
-                    rowKey="id"
-                    pagination={false}
-                    scroll={{ y: 500 }}
-                />
+            <Card style={{ marginBottom: 24 }} bodyStyle={{ padding: viewMode === 'table' ? 0 : 16 }}>
+                {viewMode === 'table' ? (
+                    <Table
+                        columns={columns}
+                        dataSource={indentItems}
+                        rowKey="id"
+                        pagination={false}
+                        scroll={{ y: 500 }}
+                    />
+                ) : (
+                    <List
+                        grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 3, xxl: 3 }}
+                        dataSource={indentItems}
+                        renderItem={renderListItem}
+                        pagination={false}
+                    />
+                )}
             </Card>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Button onClick={() => sessionData?.rak ? navigate(`/routine-indent?rak=${sessionData.rak}`) : navigate(-1)}>
-                    Resume Indenting
+                <Button onClick={handleResume}>
+                    Resume Indent
                 </Button>
 
                 <Button
                     type="primary"
-                    size="large"
+                    size="medium"
                     icon={<SendOutlined />}
                     onClick={handleSend}
                     loading={submitting}
-                    style={{ minWidth: 200, height: 50, fontSize: '18px' }}
                 >
-                    SEND INDENT
+                    Confirm & Send
                 </Button>
             </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Button, Form, Select, Spin, message, Row, Col } from 'antd';
+import { Typography, Card, Button, Form, Select, Spin, message, Row, Col, Modal } from 'antd';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,7 +9,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const HomePage = () => {
-    const { profile } = useAuth();
+    const { profile, user } = useAuth();
     const navigate = useNavigate();
     const [raks, setRaks] = useState([]);
     const [loadingRaks, setLoadingRaks] = useState(true);
@@ -36,11 +36,42 @@ const HomePage = () => {
         fetchRaks();
     }, []);
 
-    const handleStartRoutine = (values) => {
+    const handleStartRoutine = async (values) => {
         if (!values.rak) {
             message.warning("Please select a Rak first!");
             return;
         }
+
+        try {
+            const { data: existingDrafts, error } = await supabase
+                .from('indent_sessions')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('status', 'Draft')
+                .eq('session_type', 'Routine');
+
+            if (existingDrafts && existingDrafts.length > 0) {
+                Modal.confirm({
+                    title: 'Existing Draft Found',
+                    content: 'Do you want to start a new routine indent? The previous draft will be discarded.',
+                    onOk: async () => {
+                        try {
+                            const draftIds = existingDrafts.map(d => d.id);
+                            await supabase.from('indent_items').delete().in('session_id', draftIds);
+                            await supabase.from('indent_sessions').delete().in('id', draftIds);
+                            navigate(`/routine-indent?rak=${encodeURIComponent(values.rak)}`);
+                        } catch (err) {
+                            console.error(err);
+                            message.error('Failed to discard previous draft');
+                        }
+                    }
+                });
+                return; // Stop here, navigation handled in onOk
+            }
+        } catch (err) {
+            console.error(err);
+        }
+
         navigate(`/routine-indent?rak=${encodeURIComponent(values.rak)}`);
     };
 

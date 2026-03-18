@@ -550,7 +550,7 @@ const ShortExpPage = () => {
                         </Col>
                     </Row>
                     <Form.Item label="Quantity (Short Expiry)" name="qty">
-                        <InputNumber min={0} style={{ width: '100%' }} />
+                        <InputNumber min={0} style={{ width: '100%' }} inputMode="numeric" />
                     </Form.Item>
                     <Form.Item label="Remarks" name="se_remarks">
                         <Input.TextArea rows={2} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Typography, Card, Button, InputNumber, Input, Row, Col, Spin, message, DatePicker, Checkbox, Steps, Space } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
@@ -32,13 +32,18 @@ const RoutineIndentPage = () => {
     const navigate = useNavigate();
     const searchParams = new URLSearchParams(location.search);
     const rak = searchParams.get('rak');
+    const resumeItemId = searchParams.get('resumeItemId');
+    const initRakRef = useRef(null);
 
     useEffect(() => {
         if (!rak) {
             navigate('/home');
             return;
         }
-        initSession();
+        if (initRakRef.current !== rak) {
+            initRakRef.current = rak;
+            initSession();
+        }
     }, [rak]);
 
     const initSession = async () => {
@@ -92,15 +97,23 @@ const RoutineIndentPage = () => {
             if (invError) throw invError;
 
             if (!invItems || invItems.length === 0) {
-                message.warning(`No items found in Rak ${rak}`);
+                message.warning({ content: `No items found in Rak ${rak}`, key: 'no-items' });
                 navigate('/home');
                 return;
             }
 
             setItems(invItems);
 
-            // 3. Load draft data for the first item
-            await loadItemData(invItems[0].id, currentSessionId, invItems);
+            // 3. Load draft data for the specified or first item
+            let startIndex = 0;
+            if (resumeItemId) {
+                const foundIndex = invItems.findIndex(i => i.id === resumeItemId);
+                if (foundIndex !== -1) {
+                    startIndex = foundIndex;
+                }
+            }
+            setCurrentIndex(startIndex);
+            await loadItemData(invItems[startIndex].id, currentSessionId, invItems);
 
         } catch (error) {
             console.error(error);
@@ -318,6 +331,7 @@ const RoutineIndentPage = () => {
                                         size="large"
                                         min={0}
                                         value={currentMaxQty}
+                                        inputMode="numeric"
                                         onChange={(val) => {
                                             setCurrentMaxQty(val);
                                             if (currentBalance !== null && val !== null) {
@@ -335,6 +349,7 @@ const RoutineIndentPage = () => {
                                         min={0}
                                         placeholder="Balance"
                                         value={currentBalance}
+                                        inputMode="numeric"
                                         onChange={(val) => {
                                             setCurrentBalance(val);
                                             const max = currentMaxQty || 0;
@@ -356,6 +371,7 @@ const RoutineIndentPage = () => {
                                     size="large"
                                     min={0}
                                     value={currentQty}
+                                    inputMode="numeric"
                                     onChange={setCurrentQty}
                                     style={{ width: '100%' }}
                                 />
@@ -397,6 +413,7 @@ const RoutineIndentPage = () => {
                                                 placeholder="Qty"
                                                 min={0}
                                                 value={shortExp1.qty}
+                                                inputMode="numeric"
                                                 onChange={v => setShortExp1({ ...shortExp1, qty: v })}
                                             />
                                         </div>
@@ -420,6 +437,7 @@ const RoutineIndentPage = () => {
                                                 placeholder="Qty"
                                                 min={0}
                                                 value={shortExp2.qty}
+                                                inputMode="numeric"
                                                 onChange={v => setShortExp2({ ...shortExp2, qty: v })}
                                             />
                                         </div>
