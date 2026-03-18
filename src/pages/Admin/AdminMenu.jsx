@@ -1,28 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Tabs, Table, Button, Modal, Form, Input, Select, message, Popconfirm, Card, Spin, Space } from 'antd';
-import { UserOutlined, DatabaseOutlined, PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { UserOutlined, DatabaseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, DownloadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
+import InventoryTable from './InventoryTable';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 const AdminMenuPage = () => {
+    const [exporting, setExporting] = useState(false);
+
+    const handleExport = async () => {
+        try {
+            setExporting(true);
+            message.loading({ content: 'Exporting data...', key: 'export' });
+
+            // Fetch Inventory
+            const { data: inventoryData, error: inventoryError } = await supabase
+                .from('inventory_items')
+                .select('*');
+            if (inventoryError) throw inventoryError;
+
+            // Fetch Indents with related item name
+            const { data: indentData, error: indentError } = await supabase
+                .from('indent_requests')
+                .select('*, inventory_items(name)');
+            if (indentError) throw indentError;
+
+            // Create Workbook
+            const wb = XLSX.utils.book_new();
+
+            // Add Inventory Sheet
+            if (inventoryData && inventoryData.length > 0) {
+                const wsInventory = XLSX.utils.json_to_sheet(inventoryData);
+                XLSX.utils.book_append_sheet(wb, wsInventory, "Inventory");
+            }
+
+            // Add Indents Sheet
+            if (indentData && indentData.length > 0) {
+                // Flatten the data for better Excel display
+                const flatIndentData = indentData.map(item => ({
+                    ...item,
+                    drug_name: item.inventory_items?.name || 'Unknown',
+                    inventory_items: undefined // Remove the nested object
+                }));
+                const wsIndents = XLSX.utils.json_to_sheet(flatIndentData);
+                XLSX.utils.book_append_sheet(wb, wsIndents, "Indents");
+            }
+
+            // Write File
+            XLSX.writeFile(wb, `PIMS_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+            message.success({ content: 'Data exported successfully!', key: 'export' });
+        } catch (error) {
+            console.error('Export error:', error);
+            message.error({ content: 'Failed to export data', key: 'export' });
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <div>
-            <Title level={3}>Admin Control Panel</Title>
-            <Tabs defaultActiveKey="1" style={{ marginTop: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <Title level={3} style={{ margin: 0 }}>Admin Control Panel</Title>
+                <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={handleExport}
+                    loading={exporting}
+                >
+                    Export All Data
+                </Button>
+            </div>
+            <Tabs defaultActiveKey="1">
                 <Tabs.TabPane tab={<span><UserOutlined />User Management</span>} key="1">
                     <UserManagement />
                 </Tabs.TabPane>
                 <Tabs.TabPane tab={<span><DatabaseOutlined />Inventory Settings</span>} key="2">
-                    <div style={{ padding: 24, textAlign: 'center' }}>
-                        <Typography.Text type="secondary">
-                            Inventory CRUD capabilities are usually handled via backend scripts or external ETL tools in this application.
-                            If you need a dedicated frontend UI for creating/deleting stock, you can add it here.
-                        </Typography.Text>
-                        <br /><br />
-                        <Button type="primary" onClick={() => message.info('Placeholder for full Inventory CRUD grid.')}>Open Inventory Editor</Button>
-                    </div>
+                    <InventoryTable />
                 </Tabs.TabPane>
             </Tabs>
         </div>

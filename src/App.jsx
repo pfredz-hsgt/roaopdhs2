@@ -6,7 +6,6 @@ import IndentPage from './pages/Indent/IndentPage';
 import KewPS6Page from './pages/KewPS6/KewPS6Page';
 import CartPage from './pages/Cart/CartPage';
 import IndentRecordPage from './pages/Cart/IndentRecordPage';
-import SettingsPage from './pages/Settings/SettingsPage';
 import AdminMenuPage from './pages/Admin/AdminMenu';
 import LoginPage from './pages/Auth/LoginPage';
 import HomePage from './pages/Home/HomePage';
@@ -61,8 +60,6 @@ function App() {
                         <Route path="cart" element={<ProtectedRoute requireIssuer={true}><CartPage /></ProtectedRoute>} />
                         <Route path="indent-list" element={<ProtectedRoute requireIssuer={true}><IndentRecordPage /></ProtectedRoute>} />
                         <Route path="admin" element={<ProtectedRoute requireIssuer={true}><AdminMenuPage /></ProtectedRoute>} />
-
-                        <Route path="settings" element={<SettingsPage />} />
                     </Route>
                 </Routes>
             </ConfigProvider>

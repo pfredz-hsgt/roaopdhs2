@@ -97,11 +97,6 @@ const MainLayout = () => {
                 key: '/admin',
                 icon: <SettingOutlined />,
                 label: 'Admin Panel',
-            },
-            {
-                key: '/settings',
-                icon: <SettingOutlined />,
-                label: 'Settings',
             }
         );
     }
