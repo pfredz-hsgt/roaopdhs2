@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Table, Button, message, InputNumber, Card, Space, Tag, Modal, Spin, Grid, List } from 'antd';
-import { SendOutlined, ExclamationCircleOutlined, UnorderedListOutlined, TableOutlined } from '@ant-design/icons';
+import { SendOutlined, ExclamationCircleOutlined, UnorderedListOutlined, TableOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -261,12 +261,10 @@ const RoutineSummaryPage = () => {
             key: 'qty',
             width: 150,
             render: (_, record) => (
-                <InputNumber
-                    min={0}
-                    value={record.requested_qty}
-                    inputMode="numeric"
-                    onChange={(val) => handleUpdateQty(record.id, val, record)}
-                />
+                <Space>
+                    <Text strong>{record.requested_qty}</Text>
+                    {record.requested_qty > 0 && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                </Space>
             )
         }
     ];
@@ -310,13 +308,10 @@ const RoutineSummaryPage = () => {
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
                     <Text strong>Requested Qty:</Text>
-                    <InputNumber
-                        min={0}
-                        value={record.requested_qty}
-                        inputMode="numeric"
-                        onChange={(val) => handleUpdateQty(record.id, val, record)}
-                        style={{ width: '120px' }}
-                    />
+                    <Space>
+                        <Text strong style={{ fontSize: '16px' }}>{record.requested_qty}</Text>
+                        {record.requested_qty > 0 && <CheckCircleOutlined style={{ color: '#52c41a', fontSize: '16px' }} />}
+                    </Space>
                 </div>
             </Card>
         </List.Item>

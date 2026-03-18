@@ -106,7 +106,7 @@ const IndentPage = () => {
     const [indentRows, setIndentRows] = useState([]);
     const [selectedIndentRow, setSelectedIndentRow] = useState('ALL');
     const [indentSources, setIndentSources] = useState([]);
-    const [selectedIndentSource, setSelectedIndentSource] = useState('ALL');
+    const [selectedIndentSource, setSelectedIndentSource] = useState('OPD Substor');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
     const [searchQuery, setSearchQuery] = useState('');

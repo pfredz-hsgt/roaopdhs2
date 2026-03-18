@@ -25,8 +25,8 @@ const RoutineIndentPage = () => {
     const [enableShortExp, setEnableShortExp] = useState(false);
 
     // Short Expiry Details
-    const [shortExp1, setShortExp1] = useState({ batch: '', date: null, qty: 0 });
-    const [shortExp2, setShortExp2] = useState({ batch: '', date: null, qty: 0 });
+    const [shortExp1, setShortExp1] = useState({ batch: '', date: null, qty: null });
+    const [shortExp2, setShortExp2] = useState({ batch: '', date: null, qty: null });
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -149,12 +149,12 @@ const RoutineIndentPage = () => {
             setShortExp1({
                 batch: data.batch_no_1 || '',
                 date: data.exp_date_1 ? dayjs(data.exp_date_1) : null,
-                qty: data.short_qty_1 || 0
+                qty: data.short_qty_1 || null
             });
             setShortExp2({
                 batch: data.batch_no_2 || '',
                 date: data.exp_date_2 ? dayjs(data.exp_date_2) : null,
-                qty: data.short_qty_2 || 0
+                qty: data.short_qty_2 || null
             });
         } else {
             // Reset to defaults
@@ -163,8 +163,8 @@ const RoutineIndentPage = () => {
             setCurrentBalance(balance);
             setCurrentRemarks('');
             setEnableShortExp(false);
-            setShortExp1({ batch: '', date: null, qty: 0 });
-            setShortExp2({ batch: '', date: null, qty: 0 });
+            setShortExp1({ batch: '', date: null, qty: null });
+            setShortExp2({ batch: '', date: null, qty: null });
         }
     };
 

@@ -394,7 +394,7 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                             </Col>
                         </Row>
 
-                        {/* Short Expiry */}
+                        {/* Short Expiry 
                         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                             <Col xs={24}>
                                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
@@ -416,7 +416,7 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                                     )}
                                 </Space>
                             </Col>
-                        </Row>
+                        </Row>*/}
                     </div>
 
                     {/* Form */}

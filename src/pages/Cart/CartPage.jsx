@@ -74,6 +74,8 @@ const CartPage = () => {
                     id,
                     created_at,
                     requested_qty,
+                    snapshot_max_qty,
+                    snapshot_balance,
                     status,
                     indent_remarks,
                     inventory_items(*),
@@ -115,6 +117,8 @@ const CartPage = () => {
                         original_req_id: req.id,
                         item_id: req.inventory_items?.id,
                         requested_qty: req.requested_qty,
+                        snapshot_max_qty: req.snapshot_max_qty,
+                        snapshot_balance: req.snapshot_balance,
                         indent_remarks: req.indent_remarks,
                         inventory_items: req.inventory_items,
                         created_at: req.created_at
@@ -244,13 +248,11 @@ const CartPage = () => {
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
         yPosition += 7;
-        doc.text(`Pemohon: ${session.profiles?.name || 'Unknown'}`, 10, yPosition);
-        doc.text(`Tarikh: ${dayjs(session.created_at).format('DD/MM/YYYY HH:mm')}`, pageWidth - 10, yPosition, { align: 'right' });
         yPosition += 5;
 
         const tableData = session.indent_items.map((item, idx) => [
             (idx + 1).toString(),
-            (item.inventory_items?.name || '') + (item.inventory_items?.pku ? `<Tag color="cyan">${item.inventory_items.pku}</Tag>` : ''),
+            (item.inventory_items?.name || '') + (item.inventory_items?.pku ? ` (${item.inventory_items.pku})` : ''),
             item.requested_qty || 0,
             item.indent_remarks || '',
             '', // Kuantiti Diluluskan
@@ -309,19 +311,19 @@ const CartPage = () => {
         doc.text('Pemohon', leftX, finalY);
         doc.text('(Tandatangan)', leftX, finalY + 15);
         doc.text('Nama : ' + (session.profiles?.name || ''), leftX, finalY + 20);
-        doc.text('Tarikh :', leftX, finalY + 30);
+        doc.text(`Tarikh: ${dayjs(session.created_at).format('DD/MM/YYYY')}`, leftX, finalY + 25);
 
         const middleX = pageWidth / 2 - 20;
         doc.text('Pegawai Pelulus', middleX, finalY);
         doc.text('(Tandatangan)', middleX, finalY + 15);
         doc.text('Nama :', middleX, finalY + 20);
-        doc.text('Tarikh :', middleX, finalY + 30);
+        doc.text('Tarikh :', middleX, finalY + 25);
 
         const rightX = pageWidth - 60;
         doc.text('Penerima', rightX, finalY);
         doc.text('(Tandatangan)', rightX, finalY + 15);
         doc.text('Nama :  ', rightX, finalY + 20);
-        doc.text('Tarikh :', rightX, finalY + 30);
+        doc.text('Tarikh :', rightX, finalY + 25);
 
         return doc;
     };
@@ -480,7 +482,9 @@ const CartPage = () => {
                                                 }
                                                 description={
                                                     <Space style={{ marginTop: 4 }}>
-                                                        <Text color="default">Requested: <Text strong>{item.requested_qty}</Text></Text>
+                                                        <Text style={{ color: '#fa8c16' }}>Max: {item.snapshot_max_qty}</Text>
+                                                        <Text style={{ color: '#1890ff' }}>Bal: {item.snapshot_balance}</Text>
+                                                        <Text strong>Indent: {item.requested_qty}</Text>
                                                         {item.indent_remarks && (
                                                             <Text italic>Remarks: {item.indent_remarks}</Text>
                                                         )}
