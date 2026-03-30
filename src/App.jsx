@@ -8,6 +8,7 @@ import CartPage from './pages/Cart/CartPage';
 import IndentRecordPage from './pages/Cart/IndentRecordPage';
 import AdminMenuPage from './pages/Admin/AdminMenu';
 import LoginPage from './pages/Auth/LoginPage';
+import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import HomePage from './pages/Home/HomePage';
 import RoutineIndentPage from './pages/Indent/RoutineIndentPage';
 import RoutineSummaryPage from './pages/Indent/RoutineSummaryPage';
@@ -47,6 +48,7 @@ function App() {
             >
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                     <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                         <Route index element={<Navigate to="/home" replace />} />
