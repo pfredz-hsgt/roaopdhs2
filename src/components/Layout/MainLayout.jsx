@@ -176,15 +176,15 @@ const MainLayout = () => {
                         color: 'white',
                         margin: 0,
                         letterSpacing: '6px',
-                        fontWeight: 400,
-                        background: 'linear-gradient(to right, #ff9966 0%, #ff5e62 100%)',
+                        fontWeight: 450,
+                        background: 'linear-gradient(to right, #66fff7ff 0%, #67ffd9ff 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         textTransform: 'uppercase',
-                        fontSize: '24px',
+                        fontSize: '26px',
                         fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                     }}>
-                        OPDHS
+                        ARISE
                     </Title>
                     <Typography.Text style={{
                         color: 'rgba(255,255,255,0.5)',
@@ -195,7 +195,7 @@ const MainLayout = () => {
                         marginTop: '4px',
                         fontWeight: 400
                     }}>
-                        ROA OPD<br />Hosp Segamat
+                        Farmasi Pesakit Luar<br />Hospital Segamat
                     </Typography.Text>
                 </div>
                 <Menu
@@ -228,7 +228,7 @@ const MainLayout = () => {
                             style={{ fontSize: '18px', marginRight: 16 }}
                         />
                         <Title level={4} style={{ margin: 0 }}>
-                            {menuItems.find(item => item.key === location.pathname)?.label || 'OPD-HS'}
+                            {menuItems.find(item => item.key === location.pathname)?.label || 'ARISE'}
                         </Title>
                     </div>
 
