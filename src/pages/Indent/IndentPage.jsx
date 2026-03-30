@@ -360,7 +360,7 @@ const IndentPage = () => {
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                     {/* Header */}
                     <div>
-                        <Title level={3}>Indent Management</Title>
+                        <Title level={3}>Urgent Indent</Title>
                         <Text type="secondary">
                             Select items to add to your indent cart
                         </Text>

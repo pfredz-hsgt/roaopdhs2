@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Typography, Card, Spin, message, DatePicker, Select, Form, Space } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Table, Typography, Card, Spin, message, DatePicker, Select, Form, Space, Input, List, Tag } from 'antd';
 import { supabase } from '../../lib/supabase';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -17,6 +17,16 @@ const IndentRecordPage = () => {
     // Filters
     const [dateRange, setDateRange] = useState(null);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [searchText, setSearchText] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchText);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [searchText]);
 
     useEffect(() => {
         fetchData();
@@ -38,7 +48,8 @@ const IndentRecordPage = () => {
                     status, 
                     session_type, 
                     rak,
-                    profiles(name)
+                    profiles(name),
+                    indent_items(inventory_items(name))
                 `)
                 .in('status', ['Submitted', 'Approved', 'Completed'])
                 .order('created_at', { ascending: false });
@@ -114,21 +125,45 @@ const IndentRecordPage = () => {
         }
     };
 
-    const filteredSessions = sessions.filter(session => {
-        let matchesDate = true;
-        let matchesUser = true;
+    const filteredSessions = useMemo(() => {
+        return sessions.filter(session => {
+            let matchesDate = true;
+            let matchesUser = true;
+            let matchesSearch = true;
 
-        if (dateRange && dateRange[0] && dateRange[1]) {
-            const sessionDate = dayjs(session.created_at);
-            matchesDate = sessionDate.isBetween(dateRange[0], dateRange[1], 'day', '[]');
+            if (dateRange && dateRange[0] && dateRange[1]) {
+                const sessionDate = dayjs(session.created_at);
+                matchesDate = sessionDate.isBetween(dateRange[0], dateRange[1], 'day', '[]');
+            }
+
+            if (selectedUser) {
+                matchesUser = session.profiles?.name === selectedUser;
+            }
+
+            if (debouncedSearch) {
+                const lowerSearch = debouncedSearch.toLowerCase();
+                if (session.isAdhocRequests) {
+                    matchesSearch = session.items.some(item =>
+                        item.inventory_items?.name?.toLowerCase().includes(lowerSearch)
+                    );
+                } else {
+                    matchesSearch = session.indent_items?.some(item =>
+                        item.inventory_items?.name?.toLowerCase().includes(lowerSearch)
+                    ) || false;
+                }
+            }
+
+            return matchesDate && matchesUser && matchesSearch;
+        });
+    }, [sessions, dateRange, selectedUser, debouncedSearch]);
+
+    useEffect(() => {
+        if (debouncedSearch) {
+            setExpandedRowKeys(filteredSessions.map(s => s.id));
+        } else {
+            setExpandedRowKeys([]);
         }
-
-        if (selectedUser) {
-            matchesUser = session.profiles?.name === selectedUser;
-        }
-
-        return matchesDate && matchesUser;
-    });
+    }, [debouncedSearch, filteredSessions]);
 
     const columns = [
         {
@@ -164,17 +199,17 @@ const IndentRecordPage = () => {
             }
         },
         {
-            title: 'Items',
+            title: '',
             key: 'totalItems',
-            render: () => <span style={{ color: '#888' }}>Click to Expand</span> // We will rely on expandable rows for details
+            render: () => <span style={{ color: '#888' }}></span> // We will rely on expandable rows for details
         }
     ];
 
     const expandedRowRender = (record) => {
         if (record.isAdhocRequests) {
-            return <ExpandedItemsTable adhocItems={record.items} />;
+            return <ExpandedItemsTable adhocItems={record.items} debouncedSearch={debouncedSearch} />;
         }
-        return <ExpandedItemsTable sessionId={record.id} />;
+        return <ExpandedItemsTable sessionId={record.id} debouncedSearch={debouncedSearch} />;
     };
 
     return (
@@ -182,7 +217,15 @@ const IndentRecordPage = () => {
             <Title level={3}>Indent Records</Title>
 
             <Card style={{ marginBottom: 24 }}>
-                <Form layout="inline">
+                <Form layout="inline" style={{ rowGap: 16 }}>
+                    <Form.Item label="Search Item">
+                        <Input.Search
+                            placeholder="Search by item name..."
+                            allowClear
+                            onChange={e => setSearchText(e.target.value)}
+                            style={{ width: 250 }}
+                        />
+                    </Form.Item>
                     <Form.Item label="Date Range">
                         <RangePicker onChange={(dates) => setDateRange(dates)} />
                     </Form.Item>
@@ -205,7 +248,11 @@ const IndentRecordPage = () => {
                     dataSource={filteredSessions}
                     rowKey="id"
                     loading={loading}
-                    expandable={{ expandedRowRender }}
+                    expandable={{
+                        expandedRowRender,
+                        expandedRowKeys,
+                        onExpandedRowsChange: (keys) => setExpandedRowKeys(keys)
+                    }}
                 />
             </Card>
         </div>
@@ -213,9 +260,15 @@ const IndentRecordPage = () => {
 };
 
 // Subcomponent to lazy load items for a given session when expanded
-const ExpandedItemsTable = ({ sessionId, adhocItems }) => {
+const ExpandedItemsTable = ({ sessionId, adhocItems, debouncedSearch }) => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const displayItems = useMemo(() => {
+        if (!debouncedSearch) return items;
+        const lowerSearch = debouncedSearch.toLowerCase();
+        return items.filter(item => item.inventory_items?.name?.toLowerCase().includes(lowerSearch));
+    }, [items, debouncedSearch]);
 
     useEffect(() => {
         if (adhocItems) {
@@ -236,23 +289,40 @@ const ExpandedItemsTable = ({ sessionId, adhocItems }) => {
         fetchItems();
     }, [sessionId, adhocItems]);
 
-    const itemColumns = [
-        { title: 'Item', dataIndex: ['inventory_items', 'name'], key: 'name' },
-        { title: 'Max Qty', dataIndex: 'snapshot_max_qty', key: 'max_qty', render: t => t !== null && t !== undefined ? t : '-' },
-        { title: 'Balance', dataIndex: 'snapshot_balance', key: 'balance', render: t => t !== null && t !== undefined ? t : '-' },
-        { title: 'Indent Qty', dataIndex: 'requested_qty', key: 'qty' },
-        { title: 'Remarks', dataIndex: 'indent_remarks', key: 'remarks', render: t => t || '-' }
-    ];
-
     if (loading) return <Spin size="small" />;
 
     return (
-        <Table
-            columns={itemColumns}
-            dataSource={items}
-            rowKey="id"
-            pagination={false}
+        <List
             size="small"
+            dataSource={displayItems}
+            rowKey="id"
+            renderItem={item => (
+                <List.Item>
+                    <List.Item.Meta
+                        title={<Typography.Text strong>{item.inventory_items?.name}</Typography.Text>}
+                    />
+                    <Space size="large" wrap>
+                        <Space>
+                            <Typography.Text type="secondary">Max Qty:</Typography.Text>
+                            <Typography.Text>{item.snapshot_max_qty !== null && item.snapshot_max_qty !== undefined ? item.snapshot_max_qty : '-'}</Typography.Text>
+                        </Space>
+                        <Space>
+                            <Typography.Text type="secondary">Balance:</Typography.Text>
+                            <Typography.Text>{item.snapshot_balance !== null && item.snapshot_balance !== undefined ? item.snapshot_balance : '-'}</Typography.Text>
+                        </Space>
+                        <Space>
+                            <Typography.Text type="secondary">Indent Qty:</Typography.Text>
+                            <Typography.Text strong style={{ color: '#1890ff' }}>{item.requested_qty}</Typography.Text>
+                        </Space>
+                        {item.indent_remarks && (
+                            <Space>
+                                <Typography.Text type="secondary">Remarks:</Typography.Text>
+                                <Typography.Text>{item.indent_remarks}</Typography.Text>
+                            </Space>
+                        )}
+                    </Space>
+                </List.Item>
+            )}
         />
     );
 };

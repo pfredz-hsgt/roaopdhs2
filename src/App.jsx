@@ -58,7 +58,7 @@ function App() {
 
                         {/* Issuer Only Routes */}
                         <Route path="cart" element={<ProtectedRoute requireIssuer={true}><CartPage /></ProtectedRoute>} />
-                        <Route path="indent-list" element={<ProtectedRoute requireIssuer={true}><IndentRecordPage /></ProtectedRoute>} />
+                        <Route path="indent-list" element={<ProtectedRoute><IndentRecordPage /></ProtectedRoute>} />
                         <Route path="admin" element={<ProtectedRoute requireIssuer={true}><AdminMenuPage /></ProtectedRoute>} />
                     </Route>
                 </Routes>

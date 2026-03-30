@@ -73,6 +73,11 @@ const MainLayout = () => {
             label: 'Urgent Indent',
         },
         {
+            key: '/indent-list',
+            icon: <HistoryOutlined />,
+            label: 'Records',
+        },
+        {
             key: '/shortexp',
             icon: <WarningOutlined />,
             label: 'Kew.PS-6',
@@ -82,16 +87,11 @@ const MainLayout = () => {
 
     // Inject Issuer-only menus before settings
     if (isIssuer) {
-        menuItems.splice(4, 0,
+        menuItems.splice(5, 0,
             {
                 key: '/cart',
                 icon: <ShoppingCartOutlined />,
                 label: 'Cart',
-            },
-            {
-                key: '/indent-list',
-                icon: <HistoryOutlined />,
-                label: 'Records',
             },
             {
                 key: '/admin',
