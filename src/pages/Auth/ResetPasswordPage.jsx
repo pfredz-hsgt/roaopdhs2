@@ -12,12 +12,33 @@ const ResetPasswordPage = () => {
 
     useEffect(() => {
         const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
             const hash = window.location.hash;
+            let currentSession = null;
             
-            // In HashRouter, Supabase appends #access_token=... to the location hash
-            // Example: #/reset-password#access_token=... or #access_token=...
-            if (!session && !hash.includes('access_token') && !hash.includes('recovery')) {
+            // In HashRouter, Supabase often fails to automatically parse the token 
+            // because the hash looks like #/reset-password#access_token=...
+            if (hash.includes('access_token')) {
+                const accessMatch = hash.match(/access_token=([^&]+)/);
+                const refreshMatch = hash.match(/refresh_token=([^&]+)/);
+                
+                if (accessMatch && refreshMatch) {
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: accessMatch[1],
+                        refresh_token: refreshMatch[1]
+                    });
+                    
+                    if (!error && data.session) {
+                        currentSession = data.session;
+                        // Clear the token from the URL for security
+                        window.location.hash = '#/reset-password';
+                    }
+                }
+            } else {
+                const { data } = await supabase.auth.getSession();
+                currentSession = data.session;
+            }
+            
+            if (!currentSession) {
                 message.error('Invalid or expired password reset link');
                 navigate('/login');
             }
@@ -36,7 +57,7 @@ const ResetPasswordPage = () => {
             if (error) throw error;
 
             message.success('Password updated successfully!');
-            navigate('/login');
+            navigate('/');
         } catch (error) {
             message.error(error.message || 'Failed to update password');
         } finally {
