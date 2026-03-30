@@ -15,8 +15,9 @@ const ResetPasswordPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const hash = window.location.hash;
             
-            // If there is no session and no hash containing the token, redirect to login
-            if (!session && !hash) {
+            // In HashRouter, Supabase appends #access_token=... to the location hash
+            // Example: #/reset-password#access_token=... or #access_token=...
+            if (!session && !hash.includes('access_token') && !hash.includes('recovery')) {
                 message.error('Invalid or expired password reset link');
                 navigate('/login');
             }

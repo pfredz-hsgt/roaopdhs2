@@ -35,11 +35,11 @@ const LoginPage = () => {
         setResetLoading(true);
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(values.resetEmail, {
-                redirectTo: `${window.location.origin}/reset-password`,
+                redirectTo: `${window.location.origin}/#/reset-password`,
             });
-            
+
             if (error) throw error;
-            
+
             message.success('Password recovery email sent! Please check your inbox.');
             setResetModalVisible(false);
             resetForm.resetFields();
