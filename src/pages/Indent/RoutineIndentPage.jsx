@@ -339,6 +339,7 @@ const RoutineIndentPage = () => {
                                             }
                                         }}
                                         style={{ width: '100%' }}
+                                        readOnly
                                     />
                                 </div>
 

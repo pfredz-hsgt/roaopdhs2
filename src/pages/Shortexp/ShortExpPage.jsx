@@ -85,6 +85,7 @@ const ShortExpPage = () => {
                         name: invItem.name,
                         puchase_type: invItem.puchase_type,
                         std_kt: invItem.std_kt,
+                        pku: invItem.pku,
                         indent_source: invItem.indent_source,
                         batch_no: item.batch_no_1,
                         exp_date: item.exp_date_1,
@@ -102,6 +103,7 @@ const ShortExpPage = () => {
                         name: invItem.name,
                         puchase_type: invItem.puchase_type,
                         std_kt: invItem.std_kt,
+                        pku: invItem.pku,
                         indent_source: invItem.indent_source,
                         batch_no: item.batch_no_2,
                         exp_date: item.exp_date_2,
@@ -341,6 +343,7 @@ const ShortExpPage = () => {
                 <Space direction="vertical" size={2}>
                     <Text strong>{text}</Text>
                     <Space size="small" wrap>
+                        {record.pku && <Tag color="magenta" style={{ fontSize: '10px' }}>PKU: {record.pku}</Tag>}
                         {record.puchase_type && <Tag color="blue" style={{ fontSize: '10px' }}>{record.puchase_type}</Tag>}
                         {record.std_kt && <Tag color="green" style={{ fontSize: '10px' }}>{record.std_kt}</Tag>}
                         {record.indent_source && (
@@ -361,7 +364,7 @@ const ShortExpPage = () => {
             title: 'Expiry Date',
             dataIndex: 'exp_date',
             key: 'exp_date',
-            width: 120,
+            width: 130,
             render: (date) => (
                 <Space>
                     <CalendarOutlined style={{ color: '#fa8c16' }} />
@@ -535,7 +538,10 @@ const ShortExpPage = () => {
                     onFinish={handleEditSubmit}
                 >
                     <Form.Item label="Drug Name">
-                        <Input value={editingRecord?.name} disabled />
+                        <Input
+                            value={editingRecord?.name}
+                            addonAfter={editingRecord?.pku ? `PKU: ${editingRecord.pku}` : null}
+                        />
                     </Form.Item>
                     <Row gutter={16}>
                         <Col span={12}>

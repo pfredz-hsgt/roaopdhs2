@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Typography, Card, Spin, message, DatePicker, Select, Form, Space, Input, List, Tag } from 'antd';
+import { Table, Typography, Card, Spin, message, DatePicker, Select, Form, Space, Input, List, Tag, Button } from 'antd';
+import { FileExcelOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
+import * as XLSX from 'xlsx';
 
 dayjs.extend(isBetween);
 
@@ -20,6 +22,8 @@ const IndentRecordPage = () => {
     const [searchText, setSearchText] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         const handler = setTimeout(() => {
@@ -212,9 +216,98 @@ const IndentRecordPage = () => {
         return <ExpandedItemsTable sessionId={record.id} debouncedSearch={debouncedSearch} />;
     };
 
+    const exportToExcel = async () => {
+        try {
+            setExporting(true);
+            const sessionsToExport = filteredSessions.filter(s => selectedRowKeys.includes(s.id));
+            if (sessionsToExport.length === 0) return;
+
+            const sessionIds = sessionsToExport.filter(s => !s.isAdhocRequests).map(s => s.id);
+            
+            let fetchedSessionItems = [];
+            if (sessionIds.length > 0) {
+                const { data, error } = await supabase
+                    .from('indent_items')
+                    .select('session_id, requested_qty, snapshot_max_qty, snapshot_balance, indent_remarks, inventory_items(name)')
+                    .in('session_id', sessionIds);
+                if (error) throw error;
+                if (data) fetchedSessionItems = data;
+            }
+
+            const excelData = [];
+            excelData.push(['Date', 'Indenter', 'Type', 'Rak', 'Status', 'Item Name', 'Max Qty', 'Balance', 'Indent Qty', 'Remarks']);
+
+            sessionsToExport.forEach(session => {
+                const sessionDate = dayjs(session.created_at).format('DD/MM/YYYY HH:mm');
+                const indenter = session.profiles?.name || '-';
+                const type = session.session_type || '-';
+                const rak = session.rak || '-';
+                const status = session.status || '-';
+
+                let items = [];
+                if (session.isAdhocRequests) {
+                    items = session.items;
+                } else {
+                    items = fetchedSessionItems.filter(item => item.session_id === session.id);
+                }
+
+                if (items.length === 0) {
+                    excelData.push([sessionDate, indenter, type, rak, status, '', '', '', '', '']);
+                } else {
+                    items.forEach(item => {
+                        excelData.push([
+                            sessionDate,
+                            indenter,
+                            type,
+                            rak,
+                            status,
+                            item.inventory_items?.name || '-',
+                            item.snapshot_max_qty !== null ? item.snapshot_max_qty : '-',
+                            item.snapshot_balance !== null ? item.snapshot_balance : '-',
+                            item.requested_qty || 0,
+                            item.indent_remarks || ''
+                        ]);
+                    });
+                }
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            
+            ws['!cols'] = [
+                { wch: 18 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 12 },
+                { wch: 40 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 30 }
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Selected Records");
+
+            const filename = `Indent_Records_${dayjs().format('YYYYMMDD_HHmm')}.xlsx`;
+            XLSX.writeFile(wb, filename);
+
+            message.success('Export completed successfully');
+        } catch (error) {
+            console.error('Export error:', error);
+            message.error('Failed to export to Excel');
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <div>
-            <Title level={3}>Indent Records</Title>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Title level={3} style={{ margin: 0 }}>Indent Records</Title>
+                <Button
+                    type="primary"
+                    icon={<FileExcelOutlined />}
+                    onClick={exportToExcel}
+                    disabled={selectedRowKeys.length === 0}
+                    loading={exporting}
+                    style={{ backgroundColor: '#217346', borderColor: '#d6d6d6' }}
+                >
+                    Export to Excel
+                </Button>
+            </div>
 
             <Card style={{ marginBottom: 24 }}>
                 <Form layout="inline" style={{ rowGap: 16 }}>
@@ -244,6 +337,10 @@ const IndentRecordPage = () => {
 
             <Card bodyStyle={{ padding: 0 }}>
                 <Table
+                    rowSelection={{
+                        selectedRowKeys,
+                        onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
+                    }}
                     columns={columns}
                     dataSource={filteredSessions}
                     rowKey="id"

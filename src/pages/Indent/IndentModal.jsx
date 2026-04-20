@@ -337,7 +337,7 @@ const IndentModal = ({ drug, visible, onClose, onSuccess, onDrugUpdate, width = 
                                     </Text>
                                     <InputNumber
                                         value={maxQty}
-                                        onChange={handleMaxQtyChange}
+                                        readOnly
                                         placeholder="Max Qty"
                                         style={{ width: '100%' }}
                                         min={0}

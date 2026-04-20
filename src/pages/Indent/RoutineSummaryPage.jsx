@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Table, Button, message, InputNumber, Card, Space, Tag, Modal, Spin, Grid, List } from 'antd';
+import { Typography, Table, Button, message, InputNumber, Card, Space, Tag, Modal, Spin, Grid, List, Affix } from 'antd';
 import { SendOutlined, ExclamationCircleOutlined, UnorderedListOutlined, TableOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -324,10 +324,15 @@ const RoutineSummaryPage = () => {
                     <Title level={3} style={{ margin: 0 }}>Indent Summary</Title>
                     <Text type="secondary">Created by: {profile?.name} at {dayjs(sessionData?.created_at).format('DD/MM/YYYY HH:mm:ss')}</Text>
                 </div>
-                <Space wrap>
+                <Space wrap style={{ alignItems: 'center' }}>
                     {sessionData?.rak && (
                         <Tag color="blue" style={{ fontSize: '16px', padding: '4px 12px' }}>Rak: {sessionData.rak}</Tag>
                     )}
+                    <Affix offsetTop={16}>
+                        <Button onClick={handleResume} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 100 }}>
+                            Resume Indent
+                        </Button>
+                    </Affix>
                     <Space>
                         <Button
                             type={viewMode === 'list' ? 'primary' : 'default'}
@@ -362,11 +367,7 @@ const RoutineSummaryPage = () => {
                 )}
             </Card>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Button onClick={handleResume}>
-                    Resume Indent
-                </Button>
-
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
                 <Button
                     type="primary"
                     size="medium"

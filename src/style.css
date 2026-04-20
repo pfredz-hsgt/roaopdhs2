@@ -15,15 +15,8 @@
   background-color: #f1fbff !important;
 }
 
-.ant-table-tbody>tr:hover>td:first-child {
-  border-left: 4px solid #3b82f6;
-}
+.ant-table-tbody>tr:hover>td:first-child {}
 
-.ant-table-tbody>tr:hover>td {
-  border-top: 1px solid #3b82f6;
-  border-bottom: 1px solid #3b82f6;
-}
+.ant-table-tbody>tr:hover>td {}
 
-.ant-table-tbody>tr:hover>td:last-child {
-  border-right: 4px solid #3b82f6;
-}
+.ant-table-tbody>tr:hover>td:last-child {}

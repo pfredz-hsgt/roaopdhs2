@@ -1,4 +1,20 @@
 to-do list:
+- add kew.ps6 key in module - go thru each item
+
+
+
+
+
+
+
+Done.
+- button resume indent: letak atas atau floating
+- fix kan max qty dkt indent modal - user x boleh edit
+- dlm cart,  jgn remove kalau qty 0
+- kew.ps-6 page - show sku
+- add function export to excel for IndentRecords
+
+
 	
 [LoginPage]
 each user will be pre-assigned as either (Indenter) or (Issuer)

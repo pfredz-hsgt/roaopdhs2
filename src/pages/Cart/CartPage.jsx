@@ -90,7 +90,7 @@ const CartPage = () => {
             const processedSessions = (sessionsData || [])
                 .map(sess => {
                     const sortedItems = [...sess.indent_items]
-                        .filter(item => item.requested_qty > 0)
+                        .filter(item => item.requested_qty >= 0)
                         .sort((a, b) =>
                             (a.inventory_items?.name || '').localeCompare(b.inventory_items?.name || '')
                         );
@@ -158,22 +158,12 @@ const CartPage = () => {
 
             if (editingItem.original_req_id) {
                 // Update Ad-hoc Request
-                if (newQuantity === 0) {
-                    const { error } = await supabase.from('indent_requests').delete().eq('id', editingItem.original_req_id);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabase.from('indent_requests').update({ requested_qty: newQuantity }).eq('id', editingItem.original_req_id);
-                    if (error) throw error;
-                }
+                const { error } = await supabase.from('indent_requests').update({ requested_qty: newQuantity }).eq('id', editingItem.original_req_id);
+                if (error) throw error;
             } else {
                 // Update Session Item
-                if (newQuantity === 0) {
-                    const { error } = await supabase.from('indent_items').delete().eq('id', editingItem.id);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabase.from('indent_items').update({ requested_qty: newQuantity }).eq('id', editingItem.id);
-                    if (error) throw error;
-                }
+                const { error } = await supabase.from('indent_items').update({ requested_qty: newQuantity }).eq('id', editingItem.id);
+                if (error) throw error;
             }
 
             message.success('Quantity updated successfully');
@@ -581,10 +571,6 @@ const CartPage = () => {
                                     style={{ width: '120px' }}
                                 />
                             </Space>
-
-                            <div style={{ marginTop: 12 }}>
-                                <Text type="secondary" style={{ fontSize: '12px' }}>Set to 0 to remove this item</Text>
-                            </div>
 
                         </div>
                         {/* Indent Remarks (if available) */}
