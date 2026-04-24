@@ -336,7 +336,24 @@ const CartPage = () => {
                     doc.setProperties({ title: filename });
                     const pdfBlob = doc.output('blob');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
-                    window.open(pdfUrl, '_blank');
+                    
+                    const newWindow = window.open('', '_blank');
+                    if (newWindow) {
+                        newWindow.document.title = filename;
+                        newWindow.document.body.style.margin = '0';
+                        newWindow.document.body.style.overflow = 'hidden';
+                        
+                        const iframe = newWindow.document.createElement('iframe');
+                        iframe.src = pdfUrl;
+                        iframe.style.width = '100vw';
+                        iframe.style.height = '100vh';
+                        iframe.style.border = 'none';
+                        iframe.title = filename;
+                        
+                        newWindow.document.body.appendChild(iframe);
+                    } else {
+                        window.open(pdfUrl, '_blank');
+                    }
                 }
                 exportCount++;
             });

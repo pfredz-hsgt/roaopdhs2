@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Typography, Card, Spin, message, DatePicker, Select, Form, Space, Input, List, Tag, Button } from 'antd';
-import { FileExcelOutlined } from '@ant-design/icons';
+import { FileExcelOutlined, EyeOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 dayjs.extend(isBetween);
 
@@ -71,7 +73,7 @@ const IndentRecordPage = () => {
                     snapshot_max_qty,
                     snapshot_balance,
                     indent_remarks,
-                    inventory_items(name),
+                    inventory_items(name, pku),
                     profiles(name)
                 `)
                 .in('status', ['Approved', 'Completed'])
@@ -216,6 +218,190 @@ const IndentRecordPage = () => {
         return <ExpandedItemsTable sessionId={record.id} debouncedSearch={debouncedSearch} />;
     };
 
+    const generatePDFDocument = (session) => {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        let yPosition = 15;
+
+        // Header
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'italic');
+        doc.text('Pekeliling Perbendaharaan Malaysia', 7, yPosition);
+        doc.setFont(undefined, 'normal');
+        doc.text('AM 6.5 LAMPIRAN B', pageWidth / 2, yPosition, { align: 'center' });
+        doc.text('KEW.PS-8', pageWidth - 7, yPosition, { align: 'right' });
+        yPosition += 10;
+
+        // Title
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        let title = `BORANG PERMOHONAN STOK UBAT (${session.session_type})`;
+        if (session.rak) title += ` - RAK ${session.rak}`;
+        doc.text(title, pageWidth / 2, yPosition, { align: 'center' });
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        yPosition += 7;
+        yPosition += 5;
+
+        const tableData = session.indent_items.map((item, idx) => [
+            (idx + 1).toString(),
+            (item.inventory_items?.name || '') + (item.inventory_items?.pku ? ` (${item.inventory_items.pku})` : ''),
+            item.requested_qty || 0,
+            item.indent_remarks || '',
+            '', // Kuantiti Diluluskan
+            '', // Catatan
+        ]);
+
+        autoTable(doc, {
+            startY: yPosition,
+            head: [[
+                { content: 'Bil', styles: { halign: 'center' } },
+                { content: 'Perihal stok', styles: { halign: 'center' } },
+                { content: 'Kuantiti \nDipohon', styles: { halign: 'center' } },
+                { content: 'Catatan', styles: { halign: 'center' } },
+                { content: 'Kuantiti \nDiluluskan', styles: { halign: 'center' } },
+                { content: 'Catatan', styles: { halign: 'center' } },
+            ]],
+            body: tableData,
+            theme: 'grid',
+            styles: { fontSize: 10, cellPadding: 3 },
+            headStyles: {
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold',
+                lineWidth: 0.2,
+                lineColor: [0, 0, 0],
+            },
+            bodyStyles: {
+                lineWidth: 0.2,
+                lineColor: [0, 0, 0],
+                minCellHeight: 9,
+            },
+            columnStyles: {
+                0: { cellWidth: 11, halign: 'center' },
+                1: { cellWidth: 70 },
+                2: { cellWidth: 25, halign: 'center' },
+                3: { cellWidth: 32 },
+                4: { cellWidth: 25, halign: 'center' },
+                5: { cellWidth: 32 },
+            },
+            margin: { bottom: 50, left: 7, right: 7 },
+            didDrawCell: function (data) {
+                if (data.column.index === 4) {
+                    doc.setLineWidth(0.8);
+                    doc.line(data.cell.x, data.cell.y, data.cell.x, data.cell.y + data.cell.height);
+                    doc.setLineWidth(0.2);
+                }
+            },
+        });
+
+        // Signatures
+        const finalY = pageHeight - 50;
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+
+        const leftX = 15;
+        doc.text('Pemohon', leftX, finalY);
+        doc.text('(Tandatangan)', leftX, finalY + 15);
+        doc.text('Nama : ' + (session.profiles?.name || ''), leftX, finalY + 20);
+        doc.text(`Tarikh: ${dayjs(session.created_at).format('DD/MM/YYYY')}`, leftX, finalY + 25);
+
+        const middleX = pageWidth / 2 - 20;
+        doc.text('Pegawai Pelulus', middleX, finalY);
+        doc.text('(Tandatangan)', middleX, finalY + 15);
+        doc.text('Nama :', middleX, finalY + 20);
+        doc.text('Tarikh :', middleX, finalY + 25);
+
+        const rightX = pageWidth - 60;
+        doc.text('Penerima', rightX, finalY);
+        doc.text('(Tandatangan)', rightX, finalY + 15);
+        doc.text('Nama :  ', rightX, finalY + 20);
+        doc.text('Tarikh :', rightX, finalY + 25);
+
+        return doc;
+    };
+
+    const processPDFExport = async (mode) => {
+        try {
+            const sessionsToExport = filteredSessions.filter(s => selectedRowKeys.includes(s.id));
+            if (sessionsToExport.length === 0) return;
+
+            const sessionIds = sessionsToExport.filter(s => !s.isAdhocRequests).map(s => s.id);
+            
+            let fetchedSessionItems = [];
+            if (sessionIds.length > 0) {
+                const { data, error } = await supabase
+                    .from('indent_items')
+                    .select('session_id, requested_qty, snapshot_max_qty, snapshot_balance, indent_remarks, inventory_items(name, pku)')
+                    .in('session_id', sessionIds);
+                if (error) throw error;
+                if (data) fetchedSessionItems = data;
+            }
+
+            let exportCount = 0;
+
+            sessionsToExport.forEach(session => {
+                let items = [];
+                if (session.isAdhocRequests) {
+                    items = session.items;
+                } else {
+                    items = fetchedSessionItems.filter(item => item.session_id === session.id);
+                }
+
+                if (items.length === 0) return;
+
+                // Sort items alphabetically
+                const sortedItems = [...items].sort((a, b) =>
+                    (a.inventory_items?.name || '').localeCompare(b.inventory_items?.name || '')
+                );
+
+                const sessionWithItems = { ...session, indent_items: sortedItems };
+                const doc = generatePDFDocument(sessionWithItems);
+                const timestamp = dayjs(session.created_at).format('YYYYMMDD_HHmm');
+                const safeName = (session.profiles?.name || 'User').replace(/[^a-z0-9]/gi, '_');
+                const filename = `Indent_${safeName}_${timestamp}.pdf`;
+
+                if (mode === 'download') {
+                    doc.save(filename);
+                } else {
+                    doc.setProperties({ title: filename });
+                    const pdfBlob = doc.output('blob');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    
+                    const newWindow = window.open('', '_blank');
+                    if (newWindow) {
+                        newWindow.document.title = filename;
+                        newWindow.document.body.style.margin = '0';
+                        newWindow.document.body.style.overflow = 'hidden';
+                        
+                        const iframe = newWindow.document.createElement('iframe');
+                        iframe.src = pdfUrl;
+                        iframe.style.width = '100vw';
+                        iframe.style.height = '100vh';
+                        iframe.style.border = 'none';
+                        iframe.title = filename;
+                        
+                        newWindow.document.body.appendChild(iframe);
+                    } else {
+                        window.open(pdfUrl, '_blank');
+                    }
+                }
+                exportCount++;
+            });
+
+            if (exportCount > 0) {
+                message.success(`Successfully processed ${exportCount} PDF(s)!`);
+            } else {
+                message.warning('No sessions selected to process.');
+            }
+        } catch (error) {
+            console.error('Error exporting to PDF:', error);
+            message.error('Failed to export to PDF');
+        }
+    };
+
     const exportToExcel = async () => {
         try {
             setExporting(true);
@@ -297,16 +483,25 @@ const IndentRecordPage = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <Title level={3} style={{ margin: 0 }}>Indent Records</Title>
-                <Button
-                    type="primary"
-                    icon={<FileExcelOutlined />}
-                    onClick={exportToExcel}
-                    disabled={selectedRowKeys.length === 0}
-                    loading={exporting}
-                    style={{ backgroundColor: '#217346', borderColor: '#d6d6d6' }}
-                >
-                    Export to Excel
-                </Button>
+                <Space>
+                    <Button
+                        icon={<EyeOutlined style={{ fontSize: 19 }} />}
+                        onClick={() => processPDFExport('preview')}
+                        disabled={selectedRowKeys.length === 0}
+                        title="Preview Selected"
+                        style={{ backgroundColor: selectedRowKeys.length === 0 ? undefined : '#b8008aff', borderColor: selectedRowKeys.length === 0 ? '#d6d6d6' : '#b8008aff', color: selectedRowKeys.length === 0 ? undefined : '#fff' }}
+                    />
+                    <Button
+                        type="primary"
+                        icon={<FileExcelOutlined />}
+                        onClick={exportToExcel}
+                        disabled={selectedRowKeys.length === 0}
+                        loading={exporting}
+                        style={{ backgroundColor: '#217346', borderColor: '#d6d6d6' }}
+                    >
+                        Export to Excel
+                    </Button>
+                </Space>
             </div>
 
             <Card style={{ marginBottom: 24 }}>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Typography, Drawer, Button, Avatar, Dropdown } from 'antd';
+import { Layout, Menu, Typography, Drawer, Button, Avatar, Dropdown, Modal, Form, Input, message } from 'antd';
 import {
     SearchOutlined,
     ShoppingCartOutlined,
@@ -12,9 +12,11 @@ import {
     HistoryOutlined,
     UserOutlined,
     LogoutOutlined,
-    HomeOutlined
+    HomeOutlined,
+    LockOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -26,25 +28,51 @@ const MainLayout = () => {
     const [collapsed, setCollapsed] = useState(false);
     const { user, profile, isIssuer, signOut } = useAuth();
 
+    const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+    const [passwordForm] = Form.useForm();
+    const [changingPassword, setChangingPassword] = useState(false);
+
     const handleSignOut = async () => {
         await signOut();
         navigate('/login');
+    };
+
+    const handleChangePassword = async (values) => {
+        setChangingPassword(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: values.newPassword
+            });
+            if (error) throw error;
+            message.success('Password updated successfully');
+            setPasswordModalVisible(false);
+            passwordForm.resetFields();
+        } catch (error) {
+            console.error('Error updating password:', error);
+            message.error(error.message || 'Failed to update password');
+        } finally {
+            setChangingPassword(false);
+        }
     };
 
     const userMenu = {
         items: [
             {
                 key: 'profile',
-                label: <Text strong>{profile?.name}</Text>,
-                disabled: true
+                label: <Text strong>{profile?.name}</Text>
             },
             {
                 key: 'role',
-                label: <Text type="secondary">{profile?.role}</Text>,
-                disabled: true
+                label: <Text type="secondary">{profile?.role}</Text>
             },
             {
-                type: 'divider',
+                type: 'divider'
+            },
+            {
+                key: 'changePassword',
+                icon: <LockOutlined />,
+                label: 'Change Password',
+                onClick: () => setPasswordModalVisible(true)
             },
             {
                 key: 'logout',
@@ -73,6 +101,13 @@ const MainLayout = () => {
             label: 'Urgent Indent',
         },
         {
+            type: 'divider',
+            style: {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                margin: '12px 16px'
+            }
+        },
+        {
             key: '/indent-list',
             icon: <HistoryOutlined />,
             label: 'Records',
@@ -87,7 +122,7 @@ const MainLayout = () => {
 
     // Inject Issuer-only menus before settings
     if (isIssuer) {
-        menuItems.splice(5, 0,
+        menuItems.splice(4, 0,
             {
                 key: '/cart',
                 icon: <ShoppingCartOutlined />,
@@ -249,6 +284,54 @@ const MainLayout = () => {
                     </div>
                 </Content>
             </Layout>
+
+            {/* Change Password Modal */}
+            <Modal
+                title="Change Password"
+                open={passwordModalVisible}
+                onCancel={() => {
+                    setPasswordModalVisible(false);
+                    passwordForm.resetFields();
+                }}
+                onOk={() => passwordForm.submit()}
+                confirmLoading={changingPassword}
+                okText="Update Password"
+            >
+                <Form
+                    form={passwordForm}
+                    layout="vertical"
+                    onFinish={handleChangePassword}
+                >
+                    <Form.Item
+                        name="newPassword"
+                        label="New Password"
+                        rules={[
+                            { required: true, message: 'Please input your new password!' },
+                            { min: 6, message: 'Password must be at least 6 characters!' }
+                        ]}
+                    >
+                        <Input.Password placeholder="Enter new password" />
+                    </Form.Item>
+                    <Form.Item
+                        name="confirmPassword"
+                        label="Confirm New Password"
+                        dependencies={['newPassword']}
+                        rules={[
+                            { required: true, message: 'Please confirm your new password!' },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue('newPassword') === value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error('The two passwords that you entered do not match!'));
+                                },
+                            }),
+                        ]}
+                    >
+                        <Input.Password placeholder="Confirm new password" />
+                    </Form.Item>
+                </Form>
+            </Modal>
 
             <style>{`
         @media (min-width: 992px) {

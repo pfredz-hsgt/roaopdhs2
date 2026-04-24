@@ -291,7 +291,7 @@ const ShortExpPage = () => {
 
     const exportToExcel = () => {
         const wsData = [
-            ['Drug Name', 'Purchase Type', 'Std Kt', 'Indent Source', 'Batch No', 'Expiry Date', '6M', '5M', '4M', '3M', '2M', '1M', 'Remarks'],
+            ['Drug Name', 'PKU', 'Purchase Type', 'Std Kt', 'Indent Source', 'Batch No', 'Expiry Date', '6M', '5M', '4M', '3M', '2M', '1M', 'Remarks'],
             ...drugs.map(item => {
                 const qty6 = getQtyForColumn(item, 6);
                 const qty5 = getQtyForColumn(item, 5);
@@ -302,6 +302,7 @@ const ShortExpPage = () => {
 
                 return [
                     item.name || '',
+                    item.pku || '',
                     item.puchase_type || '',
                     item.std_kt || '',
                     item.indent_source || '',
@@ -320,7 +321,7 @@ const ShortExpPage = () => {
 
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         ws['!cols'] = [
-            { wch: 40 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
+            { wch: 40 }, { wch: 15 }, { wch: 5 }, { wch: 5 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
             { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 },
             { wch: 30 }
         ];
@@ -328,7 +329,7 @@ const ShortExpPage = () => {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Short Expiry");
 
-        const filename = `Short_Expiry_Indent_${dayjs().format('YYYY-MM-DD')}.xlsx`;
+        const filename = `Kew.PS-6_${dayjs().format('YYYYMMDD')}.xlsx`;
         XLSX.writeFile(wb, filename);
     };
 
@@ -343,7 +344,7 @@ const ShortExpPage = () => {
                 <Space direction="vertical" size={2}>
                     <Text strong>{text}</Text>
                     <Space size="small" wrap>
-                        {record.pku && <Tag color="magenta" style={{ fontSize: '10px' }}>PKU: {record.pku}</Tag>}
+                        {record.pku && <Tag color="magenta" style={{ fontSize: '10px' }}>{record.pku}</Tag>}
                         {record.puchase_type && <Tag color="blue" style={{ fontSize: '10px' }}>{record.puchase_type}</Tag>}
                         {record.std_kt && <Tag color="green" style={{ fontSize: '10px' }}>{record.std_kt}</Tag>}
                         {record.indent_source && (
@@ -365,12 +366,21 @@ const ShortExpPage = () => {
             dataIndex: 'exp_date',
             key: 'exp_date',
             width: 130,
-            render: (date) => (
-                <Space>
-                    <CalendarOutlined style={{ color: '#fa8c16' }} />
-                    <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
-                </Space>
-            ),
+            render: (date) => {
+                const daysLeft = dayjs(date).startOf('day').diff(dayjs().startOf('day'), 'day');
+                const isUrgent = daysLeft < 30;
+                return (
+                    <Space direction="vertical" size={0} align="center">
+                        <Space>
+                            <CalendarOutlined style={{ color: '#fa8c16' }} />
+                            <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
+                        </Space>
+                        <Text style={{ color: isUrgent ? 'red' : 'inherit', fontSize: '12px' }}>
+                            ({daysLeft} Days)
+                        </Text>
+                    </Space>
+                );
+            },
         },
         {
             title: '6M',
@@ -540,7 +550,7 @@ const ShortExpPage = () => {
                     <Form.Item label="Drug Name">
                         <Input
                             value={editingRecord?.name}
-                            addonAfter={editingRecord?.pku ? `PKU: ${editingRecord.pku}` : null}
+                            addonAfter={editingRecord?.pku ? `${editingRecord.pku}` : null}
                         />
                     </Form.Item>
                     <Row gutter={16}>
