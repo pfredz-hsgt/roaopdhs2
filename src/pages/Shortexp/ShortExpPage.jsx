@@ -472,9 +472,9 @@ const ShortExpPage = () => {
         <div>
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <Title level={3}>
+                        <Title level={3} style={{ margin: 0, marginBottom: 8 }}>
                             <Space>
                                 <WarningOutlined style={{ color: '#fa8c16' }} />
                                 Short Expiry Items (Kew.PS-6)
@@ -484,7 +484,7 @@ const ShortExpPage = () => {
                             Kew.PS-6 for Outpatient Pharmacy Counter.
                         </Text>
                     </div>
-                    <Space>
+                    <Space wrap>
                         <Button type="primary" onClick={() => navigate('/shortexp-entry')}>
                             Record Entry
                         </Button>
