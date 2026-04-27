@@ -28,10 +28,12 @@ import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { getSourceColor } from '../../lib/colorMappings';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
 const ShortExpPage = () => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [drugs, setDrugs] = useState([]);
     const saveTimeouts = useRef({});
@@ -87,6 +89,7 @@ const ShortExpPage = () => {
                         std_kt: invItem.std_kt,
                         pku: invItem.pku,
                         indent_source: invItem.indent_source,
+                        rak: invItem.row,
                         batch_no: item.batch_no_1,
                         exp_date: item.exp_date_1,
                         qty: item.short_qty_1 || 0,
@@ -105,6 +108,7 @@ const ShortExpPage = () => {
                         std_kt: invItem.std_kt,
                         pku: invItem.pku,
                         indent_source: invItem.indent_source,
+                        rak: invItem.row,
                         batch_no: item.batch_no_2,
                         exp_date: item.exp_date_2,
                         qty: item.short_qty_2 || 0,
@@ -344,9 +348,10 @@ const ShortExpPage = () => {
                 <Space direction="vertical" size={2}>
                     <Text strong>{text}</Text>
                     <Space size="small" wrap>
-                        {record.pku && <Tag color="magenta" style={{ fontSize: '10px' }}>{record.pku}</Tag>}
+                        {record.pku && <Tag color="magenta" style={{ fontSize: '12px' }}>{record.pku}</Tag>}
                         {record.puchase_type && <Tag color="blue" style={{ fontSize: '10px' }}>{record.puchase_type}</Tag>}
                         {record.std_kt && <Tag color="green" style={{ fontSize: '10px' }}>{record.std_kt}</Tag>}
+                        {record.rak && <Tag color="blue" style={{ fontSize: '10px' }}>Rak: {record.rak}</Tag>}
                         {record.indent_source && (
                             <Tag color={getSourceColor(record.indent_source)} style={{ fontSize: '10px' }}>{record.indent_source}</Tag>
                         )}
@@ -480,6 +485,9 @@ const ShortExpPage = () => {
                         </Text>
                     </div>
                     <Space>
+                        <Button type="primary" onClick={() => navigate('/shortexp-entry')}>
+                            Record Entry
+                        </Button>
                         <Button
                             icon={<FileExcelOutlined />}
                             onClick={exportToExcel}

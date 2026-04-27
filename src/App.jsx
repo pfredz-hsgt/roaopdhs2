@@ -14,6 +14,7 @@ import RoutineIndentPage from './pages/Indent/RoutineIndentPage';
 import RoutineSummaryPage from './pages/Indent/RoutineSummaryPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ShortExpPage from './pages/Shortexp/ShortExpPage';
+import ShortExpEntry from './pages/Shortexp/ShortExpEntry';
 import { Spin } from 'antd';
 
 const ProtectedRoute = ({ children, requireIssuer = false }) => {
@@ -57,6 +58,7 @@ function App() {
                         <Route path="routine-indent" element={<RoutineIndentPage />} />
                         <Route path="routine-summary" element={<RoutineSummaryPage />} />
                         <Route path="shortexp" element={<ShortExpPage />} />
+                        <Route path="shortexp-entry" element={<ShortExpEntry />} />
 
                         {/* Issuer Only Routes */}
                         <Route path="cart" element={<ProtectedRoute requireIssuer={true}><CartPage /></ProtectedRoute>} />

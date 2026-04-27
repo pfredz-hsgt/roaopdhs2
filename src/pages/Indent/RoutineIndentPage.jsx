@@ -285,7 +285,7 @@ const RoutineIndentPage = () => {
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
-                    <Title level={4} style={{ margin: 0 }}>Rak: {rak}</Title>
+                    <Title level={4} style={{ margin: 0 }}>Routine Indent for Rak: {rak}</Title>
                     <Text type="secondary">Item {currentIndex + 1} of {items.length}</Text>
                 </div>
                 <div style={{ textAlign: 'right' }}>
