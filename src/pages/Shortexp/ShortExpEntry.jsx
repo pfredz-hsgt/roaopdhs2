@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Typography, Card, Button, InputNumber, Input, Row, Col, Spin, message, DatePicker, Select, Space } from 'antd';
+import { Typography, Card, Button, InputNumber, Input, Row, Col, Spin, message, DatePicker, Select, Space, Modal, List, Tag, Tabs } from 'antd';
 import { LeftOutlined, RightOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,126 @@ const ShortExpEntry = () => {
     const [existingRecordId, setExistingRecordId] = useState(null);
     const [shortExp1, setShortExp1] = useState({ batch: '', date: null, qty: null });
     const [shortExp2, setShortExp2] = useState({ batch: '', date: null, qty: null });
+
+    // Search and Modal state
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [modalExp1, setModalExp1] = useState({ batch: '', date: null, qty: null });
+    const [modalExp2, setModalExp2] = useState({ batch: '', date: null, qty: null });
+    const [modalExistingRecordId, setModalExistingRecordId] = useState(null);
+    const [modalSaving, setModalSaving] = useState(false);
+
+    // Debounce search term
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Search effect
+    useEffect(() => {
+        const search = async () => {
+            if (!debouncedSearchTerm) {
+                setSearchResults([]);
+                return;
+            }
+            setIsSearching(true);
+            try {
+                const { data, error } = await supabase
+                    .from('inventory_items')
+                    .select('*')
+                    .ilike('name', `%${debouncedSearchTerm}%`)
+                    .order('name')
+                    .limit(20);
+
+                if (error) throw error;
+                setSearchResults(data);
+            } catch (err) {
+                console.error(err);
+                message.error("Search failed");
+            } finally {
+                setIsSearching(false);
+            }
+        };
+        search();
+    }, [debouncedSearchTerm]);
+
+    const openItemModal = async (item) => {
+        setSelectedItem(item);
+        setIsModalOpen(true);
+        // Fetch existing short exp record for this item
+        let { data, error } = await supabase
+            .from('indent_items')
+            .select('*')
+            .eq('item_id', item.id)
+            .or('batch_no_1.not.is.null,batch_no_2.not.is.null')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (data) {
+            setModalExistingRecordId(data.id);
+            setModalExp1({
+                batch: data.batch_no_1 || '',
+                date: data.exp_date_1 ? dayjs(data.exp_date_1) : null,
+                qty: data.short_qty_1 || null
+            });
+            setModalExp2({
+                batch: data.batch_no_2 || '',
+                date: data.exp_date_2 ? dayjs(data.exp_date_2) : null,
+                qty: data.short_qty_2 || null
+            });
+        } else {
+            setModalExistingRecordId(null);
+            setModalExp1({ batch: '', date: null, qty: null });
+            setModalExp2({ batch: '', date: null, qty: null });
+        }
+    };
+
+    const handleModalSave = async () => {
+        setModalSaving(true);
+        try {
+            const hasData = modalExp1.batch || modalExp2.batch;
+
+            if (!hasData && !modalExistingRecordId) {
+                setIsModalOpen(false);
+                return;
+            }
+
+            const upsertData = {
+                batch_no_1: modalExp1.batch || null,
+                exp_date_1: modalExp1.date ? modalExp1.date.format('YYYY-MM-DD') : null,
+                short_qty_1: modalExp1.qty || null,
+                batch_no_2: modalExp2.batch || null,
+                exp_date_2: modalExp2.date ? modalExp2.date.format('YYYY-MM-DD') : null,
+                short_qty_2: modalExp2.qty || null,
+            };
+
+            if (modalExistingRecordId) {
+                await supabase.from('indent_items').update(upsertData).eq('id', modalExistingRecordId);
+            } else {
+                if (hasData) {
+                    upsertData.session_id = null;
+                    upsertData.item_id = selectedItem.id;
+                    upsertData.requested_qty = 0;
+                    upsertData.snapshot_max_qty = selectedItem.max_qty || 0;
+                    upsertData.snapshot_balance = selectedItem.balance || 0;
+                    await supabase.from('indent_items').insert([upsertData]);
+                }
+            }
+            message.success('Short expiry details saved');
+            setIsModalOpen(false);
+        } catch (err) {
+            console.error(err);
+            message.error('Failed to save item data');
+        } finally {
+            setModalSaving(false);
+        }
+    };
 
     useEffect(() => {
         const fetchRaks = async () => {
@@ -214,7 +334,6 @@ const ShortExpEntry = () => {
                                 placeholder="Select a Rak"
                                 value={selectedRak}
                                 onChange={setSelectedRak}
-                                showSearch
                             >
                                 {raks.map(r => (
                                     <Option key={r} value={r}>{r}</Option>
@@ -226,6 +345,161 @@ const ShortExpEntry = () => {
                         </Space>
                     )}
                 </Card>
+
+                <Card title="Search & Edit Specific Drug" style={{ marginTop: 24, textAlign: 'left' }}>
+                    <Input.Search
+                        placeholder="Search drug name..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        loading={isSearching}
+                        size="large"
+                        allowClear
+                    />
+                    {searchResults.length > 0 && (
+                        <List
+                            size="small"
+                            style={{ marginTop: 16, maxHeight: 300, overflow: 'auto' }}
+                            bordered
+                            dataSource={searchResults}
+                            renderItem={(item) => (
+                                <List.Item
+                                    onClick={() => openItemModal(item)}
+                                    style={{ cursor: 'pointer', transition: 'background-color 0.3s' }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                    <List.Item.Meta
+                                        title={item.name}
+                                        description={item.row ? `Rak: ${item.row}` : null}
+                                    />
+                                </List.Item>
+                            )}
+                        />
+                    )}
+                </Card>
+
+                <Modal
+                    title={`Edit Short Expiry`}
+                    open={isModalOpen}
+                    onCancel={() => setIsModalOpen(false)}
+                    onOk={handleModalSave}
+                    confirmLoading={modalSaving}
+                    width={500}
+                    destroyOnClose
+                >
+                    {/* Drug Info */}
+                    {selectedItem && (
+                        <div style={{ textAlign: 'center', marginTop: 16 }}>
+                            <Title level={4} style={{ marginBottom: 4 }}>
+                                {selectedItem.name}
+                            </Title>
+
+                            {/* Item Code and PKU */}
+                            <Space size="large" style={{ marginBottom: 12 }}>
+                                {selectedItem.pku && (
+                                    <Text type="secondary" style={{ fontSize: '13px' }}>
+                                        PKU: <Text strong>{selectedItem.pku}</Text>
+                                    </Text>
+                                )}
+                            </Space> <br />
+
+                            {/* Tags */}
+                            <Space wrap style={{ marginBottom: 8, justifyContent: 'center' }}>
+                                {selectedItem.row && <Tag color="blue">Rak: {selectedItem.row}</Tag>}
+                                {selectedItem.puchase_type && <Tag color="orange">{selectedItem.puchase_type}</Tag>}
+                                {selectedItem.indent_source && <Tag color="green">{selectedItem.indent_source}</Tag>}
+                                {selectedItem.std_kt && <Tag color="purple">{selectedItem.std_kt}</Tag>}
+                            </Space>
+                        </div>
+                    )}
+
+                    <div style={{ background: '#fafafa', padding: 16, borderRadius: 8, marginTop: 16 }}>
+                        <Tabs
+                            defaultActiveKey="1"
+                            type="card"
+                            items={[
+                                {
+                                    key: '1',
+                                    label: 'Batch 1',
+                                    children: (
+                                        <div style={{ padding: '16px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8 }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                                <div>
+                                                    <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Batch Number</Text>
+                                                    <Input
+                                                        placeholder="Batch No"
+                                                        value={modalExp1.batch}
+                                                        onChange={e => setModalExp1({ ...modalExp1, batch: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Quantity</Text>
+                                                    <InputNumber
+                                                        placeholder="Qty"
+                                                        min={0}
+                                                        value={modalExp1.qty}
+                                                        inputMode="numeric"
+                                                        onChange={v => setModalExp1({ ...modalExp1, qty: v })}
+                                                        style={{ width: '100%' }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Expiry Date</Text>
+                                                    <DatePicker
+                                                        placeholder="Expiry Date"
+                                                        style={{ width: '100%' }}
+                                                        value={modalExp1.date}
+                                                        onChange={d => setModalExp1({ ...modalExp1, date: d })}
+                                                        format="DD/MM/YYYY"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                },
+                                {
+                                    key: '2',
+                                    label: 'Batch 2',
+                                    children: (
+                                        <div style={{ padding: '16px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8 }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                                <div>
+                                                    <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Batch Number</Text>
+                                                    <Input
+                                                        placeholder="Batch No"
+                                                        value={modalExp2.batch}
+                                                        onChange={e => setModalExp2({ ...modalExp2, batch: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Quantity</Text>
+                                                    <InputNumber
+                                                        placeholder="Qty"
+                                                        min={0}
+                                                        value={modalExp2.qty}
+                                                        inputMode="numeric"
+                                                        onChange={v => setModalExp2({ ...modalExp2, qty: v })}
+                                                        style={{ width: '100%' }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Expiry Date</Text>
+                                                    <DatePicker
+                                                        placeholder="Expiry Date"
+                                                        style={{ width: '100%' }}
+                                                        value={modalExp2.date}
+                                                        onChange={d => setModalExp2({ ...modalExp2, date: d })}
+                                                        format="DD/MM/YYYY"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                            ]}
+                        />
+                    </div>
+                </Modal>
             </div>
         );
     }
@@ -282,81 +556,90 @@ const ShortExpEntry = () => {
                 <div style={{ background: '#fafafa', padding: 16, borderRadius: 8 }}>
                     <Title level={5} style={{ marginBottom: 16 }}>Short Expiry Details</Title>
 
-                    <Row gutter={[24, 24]}>
-                        <Col xs={24} sm={12}>
-                            <div style={{ padding: '16px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8 }}>
-                                <Text strong style={{ display: 'block', marginBottom: 12 }}>Batch 1</Text>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Batch Number</Text>
-                                        <Input
-                                            placeholder="Batch No"
-                                            value={shortExp1.batch}
-                                            onChange={e => setShortExp1({ ...shortExp1, batch: e.target.value })}
-                                        />
+                    <Tabs
+                        defaultActiveKey="1"
+                        type="card"
+                        items={[
+                            {
+                                key: '1',
+                                label: 'Batch 1',
+                                children: (
+                                    <div style={{ padding: '16px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8 }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                            <div>
+                                                <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Batch Number</Text>
+                                                <Input
+                                                    placeholder="Batch No"
+                                                    value={shortExp1.batch}
+                                                    onChange={e => setShortExp1({ ...shortExp1, batch: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Quantity</Text>
+                                                <InputNumber
+                                                    placeholder="Qty"
+                                                    min={0}
+                                                    value={shortExp1.qty}
+                                                    inputMode="numeric"
+                                                    onChange={v => setShortExp1({ ...shortExp1, qty: v })}
+                                                    style={{ width: '100%' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Expiry Date</Text>
+                                                <DatePicker
+                                                    placeholder="Expiry Date"
+                                                    style={{ width: '100%' }}
+                                                    value={shortExp1.date}
+                                                    onChange={d => setShortExp1({ ...shortExp1, date: d })}
+                                                    format="DD/MM/YYYY"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Quantity</Text>
-                                        <InputNumber
-                                            placeholder="Qty"
-                                            min={0}
-                                            value={shortExp1.qty}
-                                            inputMode="numeric"
-                                            onChange={v => setShortExp1({ ...shortExp1, qty: v })}
-                                            style={{ width: '100%' }}
-                                        />
+                                )
+                            },
+                            {
+                                key: '2',
+                                label: 'Batch 2',
+                                children: (
+                                    <div style={{ padding: '16px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8 }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                            <div>
+                                                <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Batch Number</Text>
+                                                <Input
+                                                    placeholder="Batch No"
+                                                    value={shortExp2.batch}
+                                                    onChange={e => setShortExp2({ ...shortExp2, batch: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Quantity</Text>
+                                                <InputNumber
+                                                    placeholder="Qty"
+                                                    min={0}
+                                                    value={shortExp2.qty}
+                                                    inputMode="numeric"
+                                                    onChange={v => setShortExp2({ ...shortExp2, qty: v })}
+                                                    style={{ width: '100%' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Expiry Date</Text>
+                                                <DatePicker
+                                                    placeholder="Expiry Date"
+                                                    style={{ width: '100%' }}
+                                                    value={shortExp2.date}
+                                                    onChange={d => setShortExp2({ ...shortExp2, date: d })}
+                                                    format="DD/MM/YYYY"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Expiry Date</Text>
-                                        <DatePicker
-                                            placeholder="Expiry Date"
-                                            style={{ width: '100%' }}
-                                            value={shortExp1.date}
-                                            onChange={d => setShortExp1({ ...shortExp1, date: d })}
-                                            format="DD/MM/YYYY"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </Col>
-
-                        <Col xs={24} sm={12}>
-                            <div style={{ padding: '16px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8 }}>
-                                <Text strong style={{ display: 'block', marginBottom: 12 }}>Batch 2</Text>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Batch Number</Text>
-                                        <Input
-                                            placeholder="Batch No"
-                                            value={shortExp2.batch}
-                                            onChange={e => setShortExp2({ ...shortExp2, batch: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Quantity</Text>
-                                        <InputNumber
-                                            placeholder="Qty"
-                                            min={0}
-                                            value={shortExp2.qty}
-                                            inputMode="numeric"
-                                            onChange={v => setShortExp2({ ...shortExp2, qty: v })}
-                                            style={{ width: '100%' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: '12px', marginBottom: '4px', display: 'block' }}>Expiry Date</Text>
-                                        <DatePicker
-                                            placeholder="Expiry Date"
-                                            style={{ width: '100%' }}
-                                            value={shortExp2.date}
-                                            onChange={d => setShortExp2({ ...shortExp2, date: d })}
-                                            format="DD/MM/YYYY"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </Col>
-                    </Row>
+                                )
+                            }
+                        ]}
+                    />
                 </div>
             </Card>
 
