@@ -237,7 +237,6 @@ const IndentPage = () => {
         if (newPageSize !== pageSize) {
             setPageSize(newPageSize);
         }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [pageSize]);
 
     const handleIndentSuccess = useCallback(() => {

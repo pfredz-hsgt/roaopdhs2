@@ -462,7 +462,11 @@ const CartPage = () => {
                                     dataSource={session.indent_items}
                                     renderItem={(item) => (
                                         <List.Item
-                                            style={{ padding: '12px 0', cursor: 'pointer' }}
+                                            style={{
+                                                padding: '12px 0',
+                                                cursor: 'pointer',
+                                                opacity: item.requested_qty === 0 ? 0.4 : 1
+                                            }}
                                             onClick={() => {
                                                 setEditingItem(item);
                                                 setNewQuantity(item.requested_qty);
@@ -472,28 +476,39 @@ const CartPage = () => {
                                         >
                                             <List.Item.Meta
                                                 title={
-                                                    <Space>
-                                                        {item.inventory_items?.puchase_type && (
-                                                            <Tag color={getPuchaseTypeColor(item.inventory_items?.puchase_type)}>
-                                                                {item.inventory_items?.puchase_type}
-                                                            </Tag>
-                                                        )}
-                                                        {item.inventory_items?.std_kt && (
-                                                            <Tag color={getStdKtColor(item.inventory_items?.std_kt)}>
-                                                                {item.inventory_items?.std_kt}
-                                                            </Tag>
-                                                        )}
-                                                        <Text strong>{item.inventory_items?.name}</Text>
-                                                        {item.inventory_items?.pku && (<Tag color="cyan">{item.inventory_items?.pku}</Tag>)}
-                                                    </Space>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <Text strong style={{ fontSize: '14px', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: '1.4' }}>
+                                                            {item.inventory_items?.name}
+                                                        </Text>
+                                                        <Space wrap size={[4, 4]}>
+                                                            {item.inventory_items?.puchase_type && (
+                                                                <Tag color={getPuchaseTypeColor(item.inventory_items?.puchase_type)} style={{ margin: 0 }}>
+                                                                    {item.inventory_items?.puchase_type}
+                                                                </Tag>
+                                                            )}
+                                                            {item.inventory_items?.std_kt && (
+                                                                <Tag color={getStdKtColor(item.inventory_items?.std_kt)} style={{ margin: 0 }}>
+                                                                    {item.inventory_items?.std_kt}
+                                                                </Tag>
+                                                            )}
+                                                            {item.inventory_items?.pku && (
+                                                                <Tag color="cyan" style={{ margin: 0 }}>
+                                                                    {item.inventory_items?.pku}
+                                                                </Tag>
+                                                            )}
+                                                        </Space>
+                                                    </div>
                                                 }
                                                 description={
-                                                    <Space style={{ marginTop: 4 }}>
-                                                        <Text style={{ color: '#fa8c16' }}>Max: {item.snapshot_max_qty}</Text>
-                                                        <Text style={{ color: '#1890ff' }}>Bal: {item.snapshot_balance}</Text>
-                                                        <Text strong>Indent: {item.requested_qty}</Text>
+                                                    <Space wrap size={[8, 4]} style={{ marginTop: 8 }}>
+                                                        <Text style={{ color: item.requested_qty === 0 ? '#bfbfbf' : '#fa8c16' }}>Max: {item.snapshot_max_qty}</Text>
+                                                        <Text style={{ color: item.requested_qty === 0 ? '#bfbfbf' : '#1890ff' }}>Bal: {item.snapshot_balance}</Text>
+                                                        <Space size={4}>
+                                                            <Text type={item.requested_qty === 0 ? 'secondary' : undefined} strong={item.requested_qty > 0}>Indent: {item.requested_qty}</Text>
+                                                            {item.requested_qty > 0 && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                                                        </Space>
                                                         {item.indent_remarks && (
-                                                            <Text italic>Remarks: {item.indent_remarks}</Text>
+                                                            <Text type={item.requested_qty === 0 ? 'secondary' : undefined} italic>Remarks: {item.indent_remarks}</Text>
                                                         )}
                                                     </Space>
                                                 }

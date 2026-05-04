@@ -363,10 +363,9 @@ const ShortExpEntry = () => {
                             dataSource={searchResults}
                             renderItem={(item) => (
                                 <List.Item
+                                    className="search-result-item"
                                     onClick={() => openItemModal(item)}
-                                    style={{ cursor: 'pointer', transition: 'background-color 0.3s' }}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     <List.Item.Meta
                                         title={item.name}

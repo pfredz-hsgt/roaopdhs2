@@ -314,7 +314,7 @@ const RoutineIndentPage = () => {
                                 fontSize: '14px',
                                 marginBottom: '10px'
                             }}>
-                                PKU: {currentItem.pku}
+                                {currentItem.pku}
                             </div>
                         )}
                     </div>

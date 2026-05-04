@@ -27,6 +27,16 @@ const IndentRecordPage = () => {
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [exporting, setExporting] = useState(false);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
+
+    const handlePageChange = (page, newPageSize) => {
+        setCurrentPage(page);
+        if (newPageSize !== pageSize) {
+            setPageSize(newPageSize);
+        }
+    };
+
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearch(searchText);
@@ -329,7 +339,7 @@ const IndentRecordPage = () => {
             if (sessionsToExport.length === 0) return;
 
             const sessionIds = sessionsToExport.filter(s => !s.isAdhocRequests).map(s => s.id);
-            
+
             let fetchedSessionItems = [];
             if (sessionIds.length > 0) {
                 const { data, error } = await supabase
@@ -369,20 +379,20 @@ const IndentRecordPage = () => {
                     doc.setProperties({ title: filename });
                     const pdfBlob = doc.output('blob');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
-                    
+
                     const newWindow = window.open('', '_blank');
                     if (newWindow) {
                         newWindow.document.title = filename;
                         newWindow.document.body.style.margin = '0';
                         newWindow.document.body.style.overflow = 'hidden';
-                        
+
                         const iframe = newWindow.document.createElement('iframe');
                         iframe.src = pdfUrl;
                         iframe.style.width = '100vw';
                         iframe.style.height = '100vh';
                         iframe.style.border = 'none';
                         iframe.title = filename;
-                        
+
                         newWindow.document.body.appendChild(iframe);
                     } else {
                         window.open(pdfUrl, '_blank');
@@ -409,7 +419,7 @@ const IndentRecordPage = () => {
             if (sessionsToExport.length === 0) return;
 
             const sessionIds = sessionsToExport.filter(s => !s.isAdhocRequests).map(s => s.id);
-            
+
             let fetchedSessionItems = [];
             if (sessionIds.length > 0) {
                 const { data, error } = await supabase
@@ -458,7 +468,7 @@ const IndentRecordPage = () => {
             });
 
             const ws = XLSX.utils.aoa_to_sheet(excelData);
-            
+
             ws['!cols'] = [
                 { wch: 18 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 12 },
                 { wch: 40 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 30 }
@@ -540,6 +550,15 @@ const IndentRecordPage = () => {
                     dataSource={filteredSessions}
                     rowKey="id"
                     loading={loading}
+                    pagination={{
+                        current: currentPage,
+                        pageSize: pageSize,
+                        total: filteredSessions.length,
+                        onChange: handlePageChange,
+                        showSizeChanger: true,
+                        showTotal: (total) => `Total ${total} items`,
+                        pageSizeOptions: ['25', '50', '100', '200'],
+                    }}
                     expandable={{
                         expandedRowRender,
                         expandedRowKeys,

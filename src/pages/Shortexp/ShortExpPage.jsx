@@ -42,6 +42,16 @@ const ShortExpPage = () => {
     const [editingRecord, setEditingRecord] = useState(null);
     const [form] = Form.useForm();
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
+
+    const handlePageChange = (page, newPageSize) => {
+        setCurrentPage(page);
+        if (newPageSize !== pageSize) {
+            setPageSize(newPageSize);
+        }
+    };
+
     useEffect(() => {
         fetchShortExpDrugs();
     }, []);
@@ -505,7 +515,15 @@ const ShortExpPage = () => {
                         dataSource={drugs}
                         rowKey="id"
                         scroll={{ x: 1200 }}
-                        pagination={{ pageSize: 20 }}
+                        pagination={{
+                            current: currentPage,
+                            pageSize: pageSize,
+                            total: drugs.length,
+                            onChange: handlePageChange,
+                            showSizeChanger: true,
+                            showTotal: (total) => `Total ${total} items`,
+                            pageSizeOptions: ['25', '50', '100', '200'],
+                        }}
                         onRow={(record) => ({
                             onClick: () => {
                                 openEditModal(record);
