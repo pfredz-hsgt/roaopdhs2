@@ -38,7 +38,7 @@ const HomePage = () => {
 
     const handleStartRoutine = async (values) => {
         if (!values.rak) {
-            message.warning("Please select a Rak first!");
+            message.warning("Select a RAK first!");
             return;
         }
 
@@ -91,8 +91,8 @@ const HomePage = () => {
                         styles={{ body: { display: 'flex', flexDirection: 'column', height: 'calc(100% - 58px)' } }}
                     >
                         <Text style={{ display: 'block', marginBottom: 24 }}>
-                            Systematic indenting for specific Raks in the OPD Substore.
-                            You will review items one by one.
+                            Indent for drugs listed under specific Raks.
+                            The generated list will be applicable for OPD Substore Items only.
                         </Text>
 
                         <div style={{ marginTop: 'auto' }}>
@@ -105,7 +105,7 @@ const HomePage = () => {
                                         label="Select Rak"
                                         rules={[{ required: true, message: 'Please select a Rak' }]}
                                     >
-                                        <Select placeholder="Choose a Rak">
+                                        <Select placeholder="Rak Number">
                                             {raks.map(rak => (
                                                 <Option key={rak} value={rak}>{rak}</Option>
                                             ))}

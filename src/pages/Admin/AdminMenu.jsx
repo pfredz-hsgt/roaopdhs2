@@ -63,15 +63,15 @@ const AdminMenuPage = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <Title level={3} style={{ margin: 0 }}>Admin Control Panel</Title>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <Title level={3} style={{ margin: 0 }}>Admin Panel</Title>
                 <Button
                     type="primary"
                     icon={<DownloadOutlined />}
                     onClick={handleExport}
                     loading={exporting}
                 >
-                    Export All Data
+                    Export
                 </Button>
             </div>
             <Tabs defaultActiveKey="1">
@@ -207,9 +207,9 @@ const UserManagement = () => {
             key: 'actions',
             render: (_, record) => (
                 <Space>
-                    <Button 
-                        icon={<EditOutlined />} 
-                        size="small" 
+                    <Button
+                        icon={<EditOutlined />}
+                        size="small"
                         onClick={() => {
                             setEditingUser(record);
                             editForm.setFieldsValue({
@@ -236,10 +236,10 @@ const UserManagement = () => {
     return (
         <Card bodyStyle={{ padding: 0 }}>
             <div style={{ padding: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>Add New User</Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>New User</Button>
             </div>
 
-            <Table columns={columns} dataSource={users} rowKey="id" pagination={{ pageSize: 10 }} />
+            <Table columns={columns} dataSource={users} rowKey="id" pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
 
             <Modal
                 title="Create New User"
@@ -272,10 +272,10 @@ const UserManagement = () => {
             <Modal
                 title="Edit User"
                 open={isEditModalVisible}
-                onCancel={() => { 
-                    setIsEditModalVisible(false); 
+                onCancel={() => {
+                    setIsEditModalVisible(false);
                     setEditingUser(null);
-                    editForm.resetFields(); 
+                    editForm.resetFields();
                 }}
                 footer={null}
             >

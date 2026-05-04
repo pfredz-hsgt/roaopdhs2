@@ -159,12 +159,13 @@ const MainLayout = () => {
                 className="desktop-sider"
             >
                 <div style={{ padding: '24px 16px', textAlign: 'center', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <img src="/logo-obj.png" alt="ARISE Logo" style={{ maxWidth: '100%', height: 'auto', maxHeight: '90px', marginBottom: '0px' }} />
                     <Title level={4} style={{
                         color: 'white',
                         margin: 0,
                         letterSpacing: '6px',
                         fontWeight: 450,
-                        background: 'linear-gradient(to right, #66fff7ff 0%, #67ffd9ff 100%)',
+                        background: 'linear-gradient(to right, #ffffffff 0%, #ffeefbff 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         textTransform: 'uppercase',
@@ -207,20 +208,7 @@ const MainLayout = () => {
                 width={200}
             >
                 <div style={{ padding: '24px 16px', textAlign: 'center', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <Title level={4} style={{
-                        color: 'white',
-                        margin: 0,
-                        letterSpacing: '6px',
-                        fontWeight: 450,
-                        background: 'linear-gradient(to right, #66fff7ff 0%, #67ffd9ff 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        textTransform: 'uppercase',
-                        fontSize: '26px',
-                        fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-                    }}>
-                        ARISE
-                    </Title>
+                    <img src="/logo-obj.png" alt="ARISE Logo" style={{ maxWidth: '100%', height: 'auto', maxHeight: '84px', marginBottom: '0px' }} />
                     <Typography.Text style={{
                         color: 'rgba(255,255,255,0.5)',
                         fontSize: '10px',
@@ -262,9 +250,7 @@ const MainLayout = () => {
                             className="mobile-menu-button"
                             style={{ fontSize: '18px', marginRight: 16 }}
                         />
-                        <Title level={4} style={{ margin: 0 }}>
-                            {menuItems.find(item => item.key === location.pathname)?.label || 'ARISE'}
-                        </Title>
+
                     </div>
 
                     <div>

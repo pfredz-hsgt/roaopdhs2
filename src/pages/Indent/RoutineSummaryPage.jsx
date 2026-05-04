@@ -330,7 +330,7 @@ const RoutineSummaryPage = () => {
                     )}
                     <Affix offsetTop={16}>
                         <Button onClick={handleResume} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 100 }}>
-                            Resume Indent
+                            Resume
                         </Button>
                     </Affix>
                     <Space>

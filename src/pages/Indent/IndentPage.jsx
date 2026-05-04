@@ -360,9 +360,7 @@ const IndentPage = () => {
                     {/* Header */}
                     <div>
                         <Title level={3}>Urgent Indent</Title>
-                        <Text type="secondary">
-                            Select items to add to your indent cart
-                        </Text>
+
                     </div>
 
 

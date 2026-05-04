@@ -68,7 +68,7 @@ const LoginPage = () => {
                 .glass-card {
                     width: 100%;
                     max-width: 420px;
-                    background: rgba(255, 255, 255, 0.7) !important;
+                    background: rgba(255, 255, 255, 0.44) !important;
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
                     border: 1px solid rgba(255, 255, 255, 0.5) !important;
@@ -112,24 +112,18 @@ const LoginPage = () => {
 
             <Card className="glass-card" bordered={false}>
                 <div style={{ textAlign: 'center', marginBottom: 36 }}>
-                    <div style={{
-                        display: 'inline-block',
-                        padding: '12px',
-                        background: 'linear-gradient(135deg, rgba(24,144,255,0.1) 0%, rgba(0,209,178,0.1) 100%)',
-                        borderRadius: '50%',
-                        marginBottom: '16px'
-                    }}>
-                        <MedicineBoxOutlined style={{ fontSize: '32px', color: '#1890ff' }} />
-                    </div>
-                    <Title level={2} style={{
+                    <img src="/logo-obj.png" alt="ARISE Logo" style={{ maxWidth: '100%', height: 'auto', maxHeight: '120px', marginBottom: '0px' }} />
+                    <Title level={4} style={{
+                        color: 'white',
                         margin: 0,
-                        letterSpacing: '5px',
-                        fontWeight: 700,
-                        background: 'linear-gradient(to right, #1890ff 0%, #00d1b2 100%)',
+                        letterSpacing: '6px',
+                        fontWeight: 450,
+                        background: 'linear-gradient(to bottom, #88e6ecff 0%, #439facff 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         textTransform: 'uppercase',
-                        fontSize: '32px',
+                        fontSize: '46px',
+                        fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                     }}>
                         ARISE
                     </Title>
@@ -138,7 +132,7 @@ const LoginPage = () => {
                         letterSpacing: '1.2px',
                         textTransform: 'uppercase',
                         display: 'block',
-                        marginTop: '12px',
+                        marginTop: '0px',
                         fontWeight: 600,
                         color: '#8c8c8c'
                     }}>

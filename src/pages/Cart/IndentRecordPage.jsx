@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Typography, Card, Spin, message, DatePicker, Select, Form, Space, Input, List, Tag, Button } from 'antd';
+import { Table, Typography, Card, Spin, message, DatePicker, Select, Form, Space, Input, List, Tag, Button, Row, Col } from 'antd';
 import { FileExcelOutlined, EyeOutlined } from '@ant-design/icons';
 import { supabase } from '../../lib/supabase';
 import dayjs from 'dayjs';
@@ -28,7 +28,7 @@ const IndentRecordPage = () => {
     const [exporting, setExporting] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(25);
+    const [pageSize, setPageSize] = useState(10);
 
     const handlePageChange = (page, newPageSize) => {
         setCurrentPage(page);
@@ -491,7 +491,7 @@ const IndentRecordPage = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <Title level={3} style={{ margin: 0 }}>Indent Records</Title>
                 <Space>
                     <Button
@@ -499,7 +499,7 @@ const IndentRecordPage = () => {
                         onClick={() => processPDFExport('preview')}
                         disabled={selectedRowKeys.length === 0}
                         title="Preview Selected"
-                        style={{ backgroundColor: selectedRowKeys.length === 0 ? undefined : '#b8008aff', borderColor: selectedRowKeys.length === 0 ? '#d6d6d6' : '#b8008aff', color: selectedRowKeys.length === 0 ? undefined : '#fff' }}
+                        style={{ backgroundColor: selectedRowKeys.length === 0 ? undefined : '#6D28D9', borderColor: selectedRowKeys.length === 0 ? '#d6d6d6' : '#6D28D9', color: selectedRowKeys.length === 0 ? undefined : '#fff' }}
                     />
                     <Button
                         type="primary"
@@ -509,34 +509,42 @@ const IndentRecordPage = () => {
                         loading={exporting}
                         style={{ backgroundColor: '#217346', borderColor: '#d6d6d6' }}
                     >
-                        Export to Excel
+                        Export
                     </Button>
                 </Space>
             </div>
 
             <Card style={{ marginBottom: 24 }}>
-                <Form layout="inline" style={{ rowGap: 16 }}>
-                    <Form.Item label="Search Item">
-                        <Input.Search
-                            placeholder="Search by item name..."
-                            allowClear
-                            onChange={e => setSearchText(e.target.value)}
-                            style={{ width: 250 }}
-                        />
-                    </Form.Item>
-                    <Form.Item label="Date Range">
-                        <RangePicker onChange={(dates) => setDateRange(dates)} />
-                    </Form.Item>
-                    <Form.Item label="Indenter">
-                        <Select
-                            style={{ width: 200 }}
-                            allowClear
-                            placeholder="All Users"
-                            onChange={v => setSelectedUser(v)}
-                        >
-                            {users.map(u => <Select.Option key={u.id} value={u.name}>{u.name}</Select.Option>)}
-                        </Select>
-                    </Form.Item>
+                <Form layout="vertical">
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24} sm={12} md={8}>
+                            <Form.Item label="Search Item" style={{ margin: 0 }}>
+                                <Input.Search
+                                    placeholder="Search by item name..."
+                                    allowClear
+                                    onChange={e => setSearchText(e.target.value)}
+                                    style={{ width: '100%' }}
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <Form.Item label="Date Range" style={{ margin: 0 }}>
+                                <RangePicker style={{ width: '100%' }} onChange={(dates) => setDateRange(dates)} />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                            <Form.Item label="Indenter" style={{ margin: 0 }}>
+                                <Select
+                                    style={{ width: '100%' }}
+                                    allowClear
+                                    placeholder="All Users"
+                                    onChange={v => setSelectedUser(v)}
+                                >
+                                    {users.map(u => <Select.Option key={u.id} value={u.name}>{u.name}</Select.Option>)}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                    </Row>
                 </Form>
             </Card>
 
@@ -557,13 +565,14 @@ const IndentRecordPage = () => {
                         onChange: handlePageChange,
                         showSizeChanger: true,
                         showTotal: (total) => `Total ${total} items`,
-                        pageSizeOptions: ['25', '50', '100', '200'],
+                        pageSizeOptions: ['10', '20', '50', '100'],
                     }}
                     expandable={{
                         expandedRowRender,
                         expandedRowKeys,
                         onExpandedRowsChange: (keys) => setExpandedRowKeys(keys)
                     }}
+                    scroll={{ x: 'max-content' }}
                 />
             </Card>
         </div>

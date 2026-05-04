@@ -302,7 +302,7 @@ const InventoryTable = () => {
                     icon={<PlusOutlined />}
                     onClick={handleAdd}
                 >
-                    Add New Drug
+                    New Drug
                 </Button>
             </div>
 

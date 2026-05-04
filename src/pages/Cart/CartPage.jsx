@@ -18,7 +18,7 @@ import {
 import {
     HistoryOutlined,
     EyeOutlined,
-    DownOutlined,
+    DownloadOutlined,
     DeleteOutlined,
     CheckCircleOutlined
 } from '@ant-design/icons';
@@ -380,29 +380,24 @@ const CartPage = () => {
                         <Text type="secondary">{sessions.length} submitted session(s) waiting for approval</Text>
                     </div>
                     <Space wrap>
-                        <Button
-                            icon={<HistoryOutlined style={{ fontSize: 16 }} />}
-                            onClick={() => navigate('/indent-list')}
-                        >
-                            <span>Indent Records</span>
-                        </Button>
+
                         <Button
                             icon={<EyeOutlined style={{ fontSize: 19 }} />}
                             onClick={() => processPDFExport('preview')}
-                            disabled={sessions.length === 0}
-                            tooltip={<span>Preview Selected</span>}
-                            size="large"
-                            style={{ backgroundColor: sessions.length === 0 ? undefined : '#b8008aff', borderColor: sessions.length === 0 ? '#d6d6d6' : '#b8008aff', color: sessions.length === 0 ? undefined : '#fff' }}
+                            disabled={selectedSessions.length === 0}
+                            tooltip={<span>Preview</span>}
+                            size="medium"
+                            style={{ backgroundColor: selectedSessions.length === 0 ? undefined : '#6D28D9', borderColor: selectedSessions.length === 0 ? '#d6d6d6' : '#6D28D9', color: selectedSessions.length === 0 ? undefined : '#fff' }}
                         />
                         <Button
-                            icon={<DownOutlined style={{ fontSize: 19 }} />}
+                            icon={<DownloadOutlined style={{ fontSize: 19 }} />}
                             onClick={() => processPDFExport('download')}
-                            disabled={sessions.length === 0}
+                            disabled={selectedSessions.length === 0}
                             tooltip={<span>Download Selected</span>}
-                            size="large"
-                            style={{ backgroundColor: sessions.length === 0 ? undefined : '#0050b3', borderColor: sessions.length === 0 ? '#d6d6d6' : '#0050b3', color: sessions.length === 0 ? undefined : '#fff' }}
+                            size="medium"
+                            style={{ backgroundColor: selectedSessions.length === 0 ? undefined : '#0050b3', borderColor: selectedSessions.length === 0 ? '#d6d6d6' : '#0050b3', color: selectedSessions.length === 0 ? undefined : '#fff' }}
                         >
-                            <span>Download PDFs</span>
+                            <span>Download</span>
                         </Button>
                     </Space>
                 </div>
