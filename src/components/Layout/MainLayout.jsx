@@ -159,7 +159,7 @@ const MainLayout = () => {
                 className="desktop-sider"
             >
                 <div style={{ padding: '24px 16px', textAlign: 'center', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <img src="/logo-obj.png" alt="ARISE Logo" style={{ maxWidth: '100%', height: 'auto', maxHeight: '90px', marginBottom: '0px' }} />
+                    <img src="/vite.svg" alt="ARISE Logo" style={{ maxWidth: '100%', height: 'auto', maxHeight: '64px', marginBottom: '0px' }} />
                     <Title level={4} style={{
                         color: 'white',
                         margin: 0,

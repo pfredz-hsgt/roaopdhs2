@@ -112,7 +112,7 @@ const LoginPage = () => {
 
             <Card className="glass-card" bordered={false}>
                 <div style={{ textAlign: 'center', marginBottom: 36 }}>
-                    <img src="/logo-obj.png" alt="ARISE Logo" style={{ maxWidth: '100%', height: 'auto', maxHeight: '120px', marginBottom: '0px' }} />
+                    <img src="/vite.svg" alt="ARISE Logo" style={{ maxWidth: '100%', height: 'auto', maxHeight: '120px', marginBottom: '0px' }} />
                     <Title level={4} style={{
                         color: 'white',
                         margin: 0,
